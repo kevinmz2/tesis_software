@@ -34,7 +34,7 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
         'nombre': _nombreController.text.trim(),
         'curso': _cursoController.text.trim(),
         'docente': 'Docente actual', // luego vendrá del login
-        'estudiantes': int.parse(_estudiantesController.text.trim()),
+        'numeroEstudiantes': int.parse(_estudiantesController.text.trim()),
       };
 
       Navigator.pop(context, asignatura);

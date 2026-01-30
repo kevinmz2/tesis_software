@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'asignatura_form_screen.dart';
-import 'asignatura_detail_screen.dart'; // para mostrar los detalles de la asignatura
-
+import 'asignatura_detail_screen.dart';
 
 class DocenteHomeScreen extends StatefulWidget {
   const DocenteHomeScreen({super.key});
@@ -20,32 +19,49 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
         title: const Text('Mis Asignaturas'),
         backgroundColor: Colors.deepPurple.shade700,
       ),
-      body: _asignaturas.isEmpty ? _estadoVacio() : _listaAsignaturas(),
-      floatingActionButton: FloatingActionButton(
+
+      body: _asignaturas.isEmpty
+          ? _estadoVacio()
+          : _listaAsignaturas(),
+
+      /// BOTÓN AGREGAR MÁS VISIBLE
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.deepPurple.shade700,
+        icon: const Icon(Icons.menu_book),
+        label: const Text(
+          'Agregar asignatura',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         onPressed: _abrirFormulario,
-        child: const Icon(Icons.add),
       ),
     );
   }
 
   /// ---------------------------
-  /// CUANDO NO HAY ASIGNATURAS
+  /// ESTADO VACÍO
   /// ---------------------------
   Widget _estadoVacio() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.menu_book_outlined, size: 80, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'No tiene asignaturas registradas',
-            style: TextStyle(fontSize: 16),
+          Icon(
+            Icons.menu_book_outlined,
+            size: 90,
+            color: Colors.deepPurple.shade200,
           ),
-          SizedBox(height: 8),
-          Text(
-            'Presione + para agregar una asignatura',
+          const SizedBox(height: 16),
+          const Text(
+            'No tiene asignaturas registradas',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Presione el botón para agregar una asignatura',
             style: TextStyle(color: Colors.black54),
           ),
         ],
@@ -64,20 +80,30 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
         final asignatura = _asignaturas[index];
 
         return Card(
+          elevation: 2,
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: const Icon(Icons.book),
             title: Text(asignatura['nombre']),
             subtitle: Text('Curso: ${asignatura['curso']}'),
+
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                  tooltip: 'Editar',
+                  icon: Icon(
+                    Icons.edit,
+                    color: Colors.deepPurple.shade600,
+                  ),
                   onPressed: () => _editarAsignatura(index),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  tooltip: 'Eliminar',
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.redAccent,
+                  ),
                   onPressed: () => _eliminarAsignatura(index),
                 ),
               ],
@@ -87,17 +113,11 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AsignaturaDetailScreen(
-                    asignatura: {
-                      ...asignatura,
-                      'docente': 'Docente actual',
-                      'estudiantes': 30,
-                    },
-                  ),
+                  builder: (_) =>
+                      AsignaturaDetailScreen(asignatura: asignatura),
                 ),
               );
             },
-
           ),
         );
       },
@@ -105,7 +125,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
   }
 
   /// ---------------------------
-  /// ABRIR FORMULARIO (NUEVO)
+  /// FORMULARIO NUEVO
   /// ---------------------------
   Future<void> _abrirFormulario() async {
     final nuevaAsignatura = await Navigator.push(
@@ -123,29 +143,27 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
   }
 
   /// ---------------------------
-  /// EDITAR ASIGNATURA
+  /// EDITAR
   /// ---------------------------
   Future<void> _editarAsignatura(int index) async {
-    final asignaturaActual = _asignaturas[index];
+    final actual = _asignaturas[index];
 
-    final asignaturaEditada = await Navigator.push(
+    final editada = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AsignaturaFormScreen(
-          asignatura: asignaturaActual,
-        ),
+        builder: (_) => AsignaturaFormScreen(asignatura: actual),
       ),
     );
 
-    if (asignaturaEditada != null) {
+    if (editada != null) {
       setState(() {
-        _asignaturas[index] = asignaturaEditada;
+        _asignaturas[index] = editada;
       });
     }
   }
 
   /// ---------------------------
-  /// ELIMINAR ASIGNATURA
+  /// ELIMINAR
   /// ---------------------------
   void _eliminarAsignatura(int index) {
     showDialog(
@@ -163,6 +181,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
+              //colores
             ),
             onPressed: () {
               setState(() {
