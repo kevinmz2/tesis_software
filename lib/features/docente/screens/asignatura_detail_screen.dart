@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:app_academica_offline/features/estudiantes/screens/estudiantes_home_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/registrar_asistencia_screen.dart';
+import 'package:app_academica_offline/features/docente/screens/actividades_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/notas_screen.dart';
-//import 'package:app_academica_offline/features/docente/screens/notas_screen.dart';
 
 class AsignaturaDetailScreen extends StatelessWidget {
   final Map<String, dynamic> asignatura;
@@ -15,7 +15,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //agregado temporalmente
     debugPrint('ASIGNATURA DETAIL: $asignatura');
 
     final String asignaturaId = (asignatura['nombre'] ?? '').toString();
@@ -69,15 +68,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  if (asignaturaId.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('La asignatura no tiene un id válido'),
-                      ),
-                    );
-                    return;
-                  }
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -90,6 +80,26 @@ class AsignaturaDetailScreen extends StatelessWidget {
                 },
                 icon: const Icon(Icons.checklist),
                 label: const Text('Asistencias'),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ActividadesScreen(
+                        asignaturaId: asignaturaId,
+                        nombreAsignatura: nombreAsignatura,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.assignment),
+                label: const Text('Actividades'),
               ),
             ),
             const SizedBox(height: 12),

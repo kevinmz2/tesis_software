@@ -1,0 +1,221 @@
+import 'package:flutter/material.dart';
+import 'package:app_academica_offline/features/docente/models/actividad_model.dart';
+import 'package:app_academica_offline/features/docente/screens/actividad_form_screen.dart';
+import 'package:app_academica_offline/features/docente/screens/actividad_detail_screen.dart';
+import 'package:app_academica_offline/services/local/actividad_local_store.dart';
+
+class ActividadesScreen extends StatefulWidget {
+  final String asignaturaId;
+  final String nombreAsignatura;
+
+  const ActividadesScreen({
+    super.key,
+    required this.asignaturaId,
+    required this.nombreAsignatura,
+  });
+
+  @override
+  State<ActividadesScreen> createState() => _ActividadesScreenState();
+}
+
+class _ActividadesScreenState extends State<ActividadesScreen> {
+  final ActividadLocalStore _actividadStore = ActividadLocalStore();
+  List<Actividad> _actividades = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarActividades();
+  }
+
+  void _cargarActividades() {
+    setState(() {
+      _actividades = _actividadStore.getByAsignatura(widget.asignaturaId);
+      _actividades.sort((a, b) => b.fecha.compareTo(a.fecha));
+    });
+  }
+
+  Future<void> _nuevaActividad() async {
+    final data = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ActividadFormScreen(),
+      ),
+    );
+
+    if (data == null) return;
+
+    final actividad = Actividad(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      asignaturaId: widget.asignaturaId,
+      titulo: (data['titulo'] ?? '').toString(),
+      descripcion: (data['descripcion'] ?? '').toString(),
+      tipo: (data['tipo'] ?? 'tarea').toString(),
+      fecha: (data['fecha'] ?? '').toString(),
+      puntajeMaximo: (data['puntajeMaximo'] as num).toDouble(),
+    );
+
+    await _actividadStore.upsert(actividad);
+    _cargarActividades();
+  }
+
+  Future<void> _editarActividad(Actividad actual) async {
+    final data = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ActividadFormScreen(
+          actividad: {
+            'titulo': actual.titulo,
+            'descripcion': actual.descripcion,
+            'tipo': actual.tipo,
+            'fecha': actual.fecha,
+            'puntajeMaximo': actual.puntajeMaximo,
+          },
+        ),
+      ),
+    );
+
+    if (data == null) return;
+
+    final actividadActualizada = Actividad(
+      id: actual.id,
+      asignaturaId: actual.asignaturaId,
+      titulo: (data['titulo'] ?? '').toString(),
+      descripcion: (data['descripcion'] ?? '').toString(),
+      tipo: (data['tipo'] ?? 'tarea').toString(),
+      fecha: (data['fecha'] ?? '').toString(),
+      puntajeMaximo: (data['puntajeMaximo'] as num).toDouble(),
+    );
+
+    await _actividadStore.upsert(actividadActualizada);
+    _cargarActividades();
+  }
+
+  Future<void> _eliminarActividad(Actividad actividad) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmación'),
+        content: const Text(
+          '¿Está seguro que desea eliminar esta actividad?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('NO'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('SÍ'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await _actividadStore.delete(actividad.id);
+      _cargarActividades();
+    }
+  }
+
+  String _tipoTexto(String tipo) {
+    switch (tipo) {
+      case 'tarea':
+        return 'Tarea';
+      case 'examen':
+        return 'Examen';
+      case 'participacion':
+        return 'Participación';
+      case 'proyecto':
+        return 'Proyecto';
+      default:
+        return tipo;
+    }
+  }
+
+  Widget _estadoVacio() {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.assignment_outlined, size: 80, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'No hay actividades registradas',
+            style: TextStyle(fontSize: 16),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Presione + para agregar una actividad',
+            style: TextStyle(color: Colors.black54),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _listaActividades() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _actividades.length,
+      itemBuilder: (context, index) {
+        final actividad = _actividades[index];
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: const Icon(Icons.assignment),
+            title: Text(actividad.titulo),
+            subtitle: Text(
+              '${_tipoTexto(actividad.tipo)} • ${actividad.fecha}\nPuntaje máximo: ${actividad.puntajeMaximo}',
+            ),
+            isThreeLine: true,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                  onPressed: () => _editarActividad(actividad),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _eliminarActividad(actividad),
+                ),
+              ],
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ActividadDetailScreen(
+                    actividad: {
+                      'titulo': actividad.titulo,
+                      'descripcion': actividad.descripcion,
+                      'tipo': actividad.tipo,
+                      'fecha': actividad.fecha,
+                      'puntajeMaximo': actividad.puntajeMaximo,
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Actividades - ${widget.nombreAsignatura}'),
+      ),
+      body: _actividades.isEmpty ? _estadoVacio() : _listaActividades(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _nuevaActividad,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}

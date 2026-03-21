@@ -6,6 +6,7 @@ import 'package:app_academica_offline/features/admin/models/institucion_model.da
 import 'package:app_academica_offline/features/docente/models/asignatura_model.dart';
 import 'package:app_academica_offline/features/docente/models/asistencia_model.dart';
 import 'package:app_academica_offline/features/docente/models/nota_model.dart';
+import 'package:app_academica_offline/features/docente/models/actividad_model.dart';
 import 'package:app_academica_offline/features/estudiantes/models/estudiante_model.dart';
 
 class LocalDbService {
@@ -15,6 +16,7 @@ class LocalDbService {
   static const String asistenciasBoxName = 'asistencias_box';
   static const String estudiantesBoxName = 'estudiantes_box';
   static const String notasBoxName = 'notas_box';
+  static const String actividadesBoxName = 'actividades_box';
 
   static Future<void> init() async {
     if (!Hive.isAdapterRegistered(1)) {
@@ -41,12 +43,17 @@ class LocalDbService {
       Hive.registerAdapter(NotaAdapter());
     }
 
+    if (!Hive.isAdapterRegistered(7)) {
+      Hive.registerAdapter(ActividadAdapter());
+    }
+
     await Hive.openBox<Docente>(docentesBoxName);
     await Hive.openBox<Asignatura>(asignaturasBoxName);
     await Hive.openBox<Institucion>(institucionesBoxName);
     await Hive.openBox<Asistencia>(asistenciasBoxName);
     await Hive.openBox<Estudiante>(estudiantesBoxName);
     await Hive.openBox<Nota>(notasBoxName);
+    await Hive.openBox<Actividad>(actividadesBoxName);
   }
 
   static Box<Docente> docentesBox() => Hive.box<Docente>(docentesBoxName);
@@ -64,4 +71,7 @@ class LocalDbService {
       Hive.box<Estudiante>(estudiantesBoxName);
 
   static Box<Nota> notasBox() => Hive.box<Nota>(notasBoxName);
+
+  static Box<Actividad> actividadesBox() =>
+      Hive.box<Actividad>(actividadesBoxName);
 }
