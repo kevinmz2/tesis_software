@@ -1,6 +1,5 @@
 import 'package:hive/hive.dart';
 import 'package:app_academica_offline/features/docente/models/asignatura_model.dart';
-
 import 'local_db_service.dart';
 
 class AsignaturaLocalStore {
@@ -10,9 +9,16 @@ class AsignaturaLocalStore {
     return _box.values.toList();
   }
 
-  List<Asignatura> getByDocente(String docenteId) {
+  Asignatura? getById(String id) {
+    return _box.get(id);
+  }
+
+  List<Asignatura> getByDocenteId(String docenteId) {
     return _box.values
-        .where((a) => a.docenteId == docenteId)
+        .where(
+          (a) => a.docenteId.trim().toLowerCase() ==
+              docenteId.trim().toLowerCase(),
+        )
         .toList();
   }
 

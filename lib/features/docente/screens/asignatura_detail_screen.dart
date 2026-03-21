@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:app_academica_offline/features/estudiantes/screens/estudiantes_home_screen.dart';
+import 'package:app_academica_offline/features/docente/screens/registrar_asistencia_screen.dart';
+import 'package:app_academica_offline/features/docente/screens/notas_screen.dart';
+//import 'package:app_academica_offline/features/docente/screens/notas_screen.dart';
+
 class AsignaturaDetailScreen extends StatelessWidget {
   final Map<String, dynamic> asignatura;
 
@@ -10,10 +15,15 @@ class AsignaturaDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //agregado temporalmente
+    debugPrint('ASIGNATURA DETAIL: $asignatura');
+
+    final String asignaturaId = (asignatura['nombre'] ?? '').toString();
+    final String nombreAsignatura = (asignatura['nombre'] ?? '').toString();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalle de Asignatura'),
-        backgroundColor: Colors.deepPurple.shade700,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -24,46 +34,83 @@ class AsignaturaDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _item('Asignatura', asignatura['nombre']),
-            _item('Curso', asignatura['curso']),
-            _item('Docente', asignatura['docente'] ?? 'Docente asignado'),
+            _item('Asignatura', nombreAsignatura),
+            _item('Curso', (asignatura['curso'] ?? '').toString()),
+            _item(
+              'Docente',
+              (asignatura['docente'] ?? 'Docente asignado').toString(),
+            ),
             _item(
               'Número de estudiantes',
-              asignatura['estudiantes']?.toString() ?? '0',
+              (asignatura['numeroEstudiantes'] ?? 0).toString(),
             ),
             const SizedBox(height: 30),
 
-            /// BOTONES PLACEHOLDER
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // luego asistencia
-                    },
-                    icon: const Icon(Icons.checklist),
-                    label: const Text('Asistencia'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple.shade600,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EstudiantesHomeScreen(
+                        asignatura: asignatura,
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // luego notas
-                    },
-                    icon: const Icon(Icons.edit_note),
-                    label: const Text('Notas'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple.shade400,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                  );
+                },
+                icon: const Icon(Icons.people),
+                label: const Text('Estudiantes'),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  if (asignaturaId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('La asignatura no tiene un id válido'),
+                      ),
+                    );
+                    return;
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RegistrarAsistenciaScreen(
+                        asignaturaId: asignaturaId,
+                        nombreAsignatura: nombreAsignatura,
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  );
+                },
+                icon: const Icon(Icons.checklist),
+                label: const Text('Asistencias'),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => NotasScreen(
+                        asignaturaId: asignaturaId,
+                        nombreAsignatura: nombreAsignatura,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.edit_note),
+                label: const Text('Notas'),
+              ),
             ),
           ],
         ),

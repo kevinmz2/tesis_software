@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'backendtesis.firebasestorage.app',
     measurementId: 'G-K07Z1V9RHV',
   );
+
 }

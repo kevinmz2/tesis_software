@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'docente_form_screen.dart';
 import 'docente_detail_screen.dart';
 
@@ -12,12 +13,54 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final List<Map<String, dynamic>> _docentes = [];
 
+  Future<void> _cerrarSesion() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    await FirebaseAuth.instance.signOut();
+
+    if (!mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestión de Docentes'),
         backgroundColor: Colors.deepPurple.shade700,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Cerrar sesión',
+            onPressed: _cerrarSesion,
+          ),
+        ],
       ),
       body: _docentes.isEmpty ? _estadoVacio() : _listaDocentes(),
       floatingActionButton: FloatingActionButton(
@@ -28,9 +71,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  /// ---------------------------
-  /// UI CUANDO NO HAY DOCENTES
-  /// ---------------------------
   Widget _estadoVacio() {
     return const Center(
       child: Column(
@@ -52,9 +92,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  /// ---------------------------
-  /// LISTA DE DOCENTES
-  /// ---------------------------
   Widget _listaDocentes() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -95,9 +132,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  /// ---------------------------
-  /// ABRIR FORMULARIO (NUEVO)
-  /// ---------------------------
   Future<void> _abrirFormulario() async {
     final nuevoDocente = await Navigator.push(
       context,
@@ -113,9 +147,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
   }
 
-  /// ---------------------------
-  /// EDITAR DOCENTE
-  /// ---------------------------
   Future<void> _editarDocente(int index) async {
     final docenteActual = _docentes[index];
 
@@ -135,9 +166,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
   }
 
-  /// ---------------------------
-  /// CONFIRMAR ELIMINACIÓN
-  /// ---------------------------
   void _confirmarEliminar(int index) {
     showDialog(
       context: context,

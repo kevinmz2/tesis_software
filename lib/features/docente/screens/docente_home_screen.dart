@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'asignatura_form_screen.dart';
-import 'asignatura_detail_screen.dart'; // para mostrar los detalles de la asignatura
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:app_academica_offline/features/docente/models/asignatura_model.dart';
+import 'package:app_academica_offline/features/docente/repositories/asignatura_repository.dart';
+import 'package:app_academica_offline/features/docente/screens/asignatura_form_screen.dart';
+import 'package:app_academica_offline/features/docente/screens/asignatura_detail_screen.dart';
 
 class DocenteHomeScreen extends StatefulWidget {
   const DocenteHomeScreen({super.key});
@@ -11,51 +14,150 @@ class DocenteHomeScreen extends StatefulWidget {
 }
 
 class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
-  final List<Map<String, dynamic>> _asignaturas = [];
+  final AsignaturaRepository _repository = AsignaturaRepository();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  List<Asignatura> _asignaturas = [];
+  String _nombreDocente = 'Docente';
+
+  String get _correoDocenteActual => _auth.currentUser?.email?.trim() ?? '';
+
+  String get _uidActual => _auth.currentUser?.uid ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarNombreDocente();
+    _cargarAsignaturas();
+  }
+
+  Future<void> _cargarNombreDocente() async {
+    try {
+      if (_uidActual.isEmpty) return;
+
+      final doc = await _firestore.collection('usuarios').doc(_uidActual).get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data();
+      final nombre = (data?['nombre'] ?? '').toString().trim();
+
+      if (nombre.isNotEmpty && mounted) {
+        setState(() {
+          _nombreDocente = nombre;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar nombre del docente: $e');
+    }
+  }
+
+  void _cargarAsignaturas() {
+    setState(() {
+      _asignaturas = _repository.getByDocenteId(_correoDocenteActual);
+    });
+  }
+
+  Future<void> _cerrarSesion() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    await FirebaseAuth.instance.signOut();
+
+    if (!mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mis Asignaturas'),
-        backgroundColor: Colors.deepPurple.shade700,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Cerrar sesión',
+            onPressed: _cerrarSesion,
+          ),
+        ],
       ),
-      body: _asignaturas.isEmpty ? _estadoVacio() : _listaAsignaturas(),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.deepPurple.shade700,
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Bienvenido, $_nombreDocente',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _asignaturas.isEmpty ? _estadoVacio() : _listaAsignaturas(),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.menu_book),
+        label: const Text('Agregar asignatura'),
         onPressed: _abrirFormulario,
-        child: const Icon(Icons.add),
       ),
     );
   }
 
-  /// ---------------------------
-  /// CUANDO NO HAY ASIGNATURAS
-  /// ---------------------------
   Widget _estadoVacio() {
     return const Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.menu_book_outlined, size: 80, color: Colors.grey),
+          Icon(Icons.menu_book_outlined, size: 90),
           SizedBox(height: 16),
           Text(
             'No tiene asignaturas registradas',
-            style: TextStyle(fontSize: 16),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1C1C1C),
+            ),
           ),
           SizedBox(height: 8),
           Text(
-            'Presione + para agregar una asignatura',
-            style: TextStyle(color: Colors.black54),
+            'Presione el botón para agregar una asignatura',
+            style: TextStyle(color: Color(0xFF4A4A4A)),
           ),
         ],
       ),
     );
   }
 
-  /// ---------------------------
-  /// LISTA DE ASIGNATURAS
-  /// ---------------------------
   Widget _listaAsignaturas() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -64,49 +166,63 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
         final asignatura = _asignaturas[index];
 
         return Card(
+          elevation: 2,
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: const Icon(Icons.book),
-            title: Text(asignatura['nombre']),
-            subtitle: Text('Curso: ${asignatura['curso']}'),
+            title: Text(
+              asignatura.nombre,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1C1C1C),
+              ),
+            ),
+            subtitle: Text(
+              'Curso: ${asignatura.curso}',
+              style: const TextStyle(
+                color: Color(0xFF4A4A4A),
+              ),
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.deepPurple),
-                  onPressed: () => _editarAsignatura(index),
+                  tooltip: 'Editar',
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _editarAsignatura(asignatura),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _eliminarAsignatura(index),
+                  tooltip: 'Eliminar',
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.redAccent,
+                  ),
+                  onPressed: () => _eliminarAsignatura(asignatura),
                 ),
               ],
             ),
-
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => AsignaturaDetailScreen(
                     asignatura: {
-                      ...asignatura,
-                      'docente': 'Docente actual',
-                      'estudiantes': 30,
+                      'id': asignatura.id,
+                      'nombre': asignatura.nombre,
+                      'curso': asignatura.curso,
+                      'docente': _nombreDocente,
+                      'numeroEstudiantes': asignatura.numeroEstudiantes,
                     },
                   ),
                 ),
               );
             },
-
           ),
         );
       },
     );
   }
 
-  /// ---------------------------
-  /// ABRIR FORMULARIO (NUEVO)
-  /// ---------------------------
   Future<void> _abrirFormulario() async {
     final nuevaAsignatura = await Navigator.push(
       context,
@@ -116,39 +232,50 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
     );
 
     if (nuevaAsignatura != null) {
-      setState(() {
-        _asignaturas.add(nuevaAsignatura);
-      });
+      final asignatura = Asignatura(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        nombre: (nuevaAsignatura['nombre'] ?? '').toString(),
+        curso: (nuevaAsignatura['curso'] ?? '').toString(),
+        docenteId: _correoDocenteActual,
+        numeroEstudiantes: _leerNumeroEstudiantes(nuevaAsignatura),
+      );
+
+      await _repository.save(asignatura);
+      _cargarAsignaturas();
     }
   }
 
-  /// ---------------------------
-  /// EDITAR ASIGNATURA
-  /// ---------------------------
-  Future<void> _editarAsignatura(int index) async {
-    final asignaturaActual = _asignaturas[index];
-
-    final asignaturaEditada = await Navigator.push(
+  Future<void> _editarAsignatura(Asignatura actual) async {
+    final editada = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => AsignaturaFormScreen(
-          asignatura: asignaturaActual,
+          asignatura: {
+            'nombre': actual.nombre,
+            'curso': actual.curso,
+            'docente': _nombreDocente,
+            'numeroEstudiantes': actual.numeroEstudiantes,
+          },
         ),
       ),
     );
 
-    if (asignaturaEditada != null) {
-      setState(() {
-        _asignaturas[index] = asignaturaEditada;
-      });
+    if (editada != null) {
+      final asignaturaActualizada = Asignatura(
+        id: actual.id,
+        nombre: (editada['nombre'] ?? '').toString(),
+        curso: (editada['curso'] ?? '').toString(),
+        docenteId: actual.docenteId,
+        numeroEstudiantes: _leerNumeroEstudiantes(editada),
+      );
+
+      await _repository.save(asignaturaActualizada);
+      _cargarAsignaturas();
     }
   }
 
-  /// ---------------------------
-  /// ELIMINAR ASIGNATURA
-  /// ---------------------------
-  void _eliminarAsignatura(int index) {
-    showDialog(
+  Future<void> _eliminarAsignatura(Asignatura asignatura) async {
+    final confirmar = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Confirmación'),
@@ -157,23 +284,26 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('NO'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-            ),
-            onPressed: () {
-              setState(() {
-                _asignaturas.removeAt(index);
-              });
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('SÍ'),
           ),
         ],
       ),
     );
+
+    if (confirmar == true) {
+      await _repository.delete(asignatura.id);
+      _cargarAsignaturas();
+    }
+  }
+
+  int _leerNumeroEstudiantes(Map<String, dynamic> data) {
+    final valor = data['numeroEstudiantes'] ?? data['estudiantes'] ?? 0;
+    if (valor is int) return valor;
+    return int.tryParse(valor.toString()) ?? 0;
   }
 }
