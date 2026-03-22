@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:app_academica_offline/features/docente/models/nota_model.dart';
+import 'package:app_academica_offline/features/docente/models/actividad_model.dart';
 import 'package:app_academica_offline/features/estudiantes/models/estudiante_model.dart';
+import 'package:app_academica_offline/features/docente/screens/detalle_resumen_notas_screen.dart';
 import 'package:app_academica_offline/services/local/nota_local_store.dart';
 import 'package:app_academica_offline/services/local/estudiante_local_store.dart';
+import 'package:app_academica_offline/services/local/actividad_local_store.dart';
 
 class ResumenNotasScreen extends StatefulWidget {
   final String asignaturaId;
@@ -21,9 +24,11 @@ class ResumenNotasScreen extends StatefulWidget {
 class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
   final NotaLocalStore _notaStore = NotaLocalStore();
   final EstudianteLocalStore _estudianteStore = EstudianteLocalStore();
+  final ActividadLocalStore _actividadStore = ActividadLocalStore();
 
   List<Nota> _notas = [];
   List<Estudiante> _estudiantes = [];
+  List<Actividad> _actividades = [];
 
   @override
   void initState() {
@@ -34,10 +39,12 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
   void _cargarDatos() {
     final notas = _notaStore.getByAsignatura(widget.asignaturaId);
     final estudiantes = _estudianteStore.getByAsignatura(widget.asignaturaId);
+    final actividades = _actividadStore.getByAsignatura(widget.asignaturaId);
 
     setState(() {
       _notas = notas;
       _estudiantes = estudiantes;
+      _actividades = actividades;
     });
   }
 
@@ -102,6 +109,25 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
     return suma / promediosComponentes.length;
   }
 
+  String _estadoAcademico(double notaFinal) {
+    if (notaFinal >= 7) return 'Aprobado';
+    if (notaFinal >= 5) return 'Supletorio';
+    return 'Reprobado';
+  }
+
+  Color _colorEstado(String estado) {
+    switch (estado) {
+      case 'Aprobado':
+        return Colors.green;
+      case 'Supletorio':
+        return Colors.orange;
+      case 'Reprobado':
+        return Colors.red;
+      default:
+        return Colors.black87;
+    }
+  }
+
   String _formatear(double valor) {
     return valor.toStringAsFixed(2);
   }
@@ -131,6 +157,7 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
 
                 final promedioActual = _promedioActual(estudiante.id);
                 final notaFinal = _notaFinal(estudiante.id);
+                final estado = _estadoAcademico(notaFinal);
 
                 final promedioTareas = _promedioLista(
                   _notasPorEstudianteYTipo(estudiante.id, 'tarea'),
@@ -147,41 +174,37 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          estudiante.nombre,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Actividades calificadas: ${notasEstudiante.length}',
-                        ),
-                        Text(
-                          'Promedio actual: ${_formatear(promedioActual)}',
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Tareas: ${_formatear(promedioTareas)}'),
-                        Text('Exámenes: ${_formatear(promedioExamenes)}'),
-                        Text('Proyectos: ${_formatear(promedioProyectos)}'),
-                        Text(
-                          'Participación: ${_formatear(promedioParticipacion)}',
-                        ),
-                        const Divider(height: 20),
-                        Text(
-                          'Nota final: ${_formatear(notaFinal)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                  child: ListTile(
+                    leading: const Icon(Icons.person),
+                    title: Text(estudiante.nombre),
+                    subtitle: Text(
+                      'Actividades calificadas: ${notasEstudiante.length}\n'
+                      'Promedio actual: ${_formatear(promedioActual)}\n'
+                      'Tareas: ${_formatear(promedioTareas)}\n'
+                      'Exámenes: ${_formatear(promedioExamenes)}\n'
+                      'Proyectos: ${_formatear(promedioProyectos)}\n'
+                      'Participación: ${_formatear(promedioParticipacion)}\n'
+                      'Nota final: ${_formatear(notaFinal)}\n'
+                      'Estado: $estado',
                     ),
+                    isThreeLine: true,
+                    trailing: Icon(
+                      Icons.circle,
+                      color: _colorEstado(estado),
+                      size: 14,
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DetalleResumenNotasScreen(
+                            nombreEstudiante: estudiante.nombre,
+                            notasEstudiante: notasEstudiante,
+                            actividades: _actividades,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
