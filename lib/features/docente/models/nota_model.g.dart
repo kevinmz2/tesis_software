@@ -24,13 +24,14 @@ class NotaAdapter extends TypeAdapter<Nota> {
       tipo: fields[4] as String,
       nota: fields[5] as double,
       observacion: fields[6] as String?,
+      actividadId: fields[7] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Nota obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class NotaAdapter extends TypeAdapter<Nota> {
       ..writeByte(5)
       ..write(obj.nota)
       ..writeByte(6)
-      ..write(obj.observacion);
+      ..write(obj.observacion)
+      ..writeByte(7)
+      ..write(obj.actividadId);
   }
 
   @override

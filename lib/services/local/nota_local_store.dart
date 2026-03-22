@@ -15,6 +15,12 @@ class NotaLocalStore {
         .toList();
   }
 
+  List<Nota> getByActividad(String actividadId) {
+    return _box.values
+        .where((n) => n.actividadId == actividadId)
+        .toList();
+  }
+
   List<Nota> getByAsignaturaFechaTipo(
     String asignaturaId,
     String fecha,
@@ -30,19 +36,43 @@ class NotaLocalStore {
         .toList();
   }
 
-  Nota? getByAsignaturaEstudianteFechaTipo(
-    String asignaturaId,
-    String estudianteId,
+  List<Nota> getByActividadYFecha(
+    String actividadId,
     String fecha,
-    String tipo,
+  ) {
+    return _box.values
+        .where(
+          (n) => n.actividadId == actividadId && n.fecha == fecha,
+        )
+        .toList();
+  }
+
+  Nota? getByActividadEstudiante(
+    String actividadId,
+    String estudianteId,
   ) {
     try {
       return _box.values.firstWhere(
         (n) =>
-            n.asignaturaId == asignaturaId &&
+            n.actividadId == actividadId &&
+            n.estudianteId == estudianteId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Nota? getByActividadEstudianteFecha(
+    String actividadId,
+    String estudianteId,
+    String fecha,
+  ) {
+    try {
+      return _box.values.firstWhere(
+        (n) =>
+            n.actividadId == actividadId &&
             n.estudianteId == estudianteId &&
-            n.fecha == fecha &&
-            n.tipo == tipo,
+            n.fecha == fecha,
       );
     } catch (_) {
       return null;

@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 
 part 'nota_model.g.dart';
 
-@HiveType(typeId: 6) // usa un typeId libre
+@HiveType(typeId: 6)
 class Nota extends HiveObject {
   @HiveField(0)
   final String id;
@@ -25,6 +25,9 @@ class Nota extends HiveObject {
   @HiveField(6)
   final String? observacion;
 
+  @HiveField(7)
+  final String actividadId;
+
   Nota({
     required this.id,
     required this.asignaturaId,
@@ -33,5 +36,6 @@ class Nota extends HiveObject {
     required this.tipo,
     required this.nota,
     this.observacion,
+    required this.actividadId,
   });
 }

@@ -160,6 +160,15 @@ class _RegistrarAsistenciaScreenState
 
       await _asistenciaStore.upsertMany(asistencias);
 
+      final verificadas = _asistenciaStore.getByAsignaturaAndFecha(
+        widget.asignaturaId,
+        fechaTexto,
+      );
+
+      debugPrint(
+        'TOTAL ASISTENCIAS GUARDADAS DESPUÉS DE SAVE: ${verificadas.length}',
+      );
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

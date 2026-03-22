@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:app_academica_offline/features/docente/models/nota_model.dart';
+import 'package:app_academica_offline/features/docente/models/actividad_model.dart';
 import 'package:app_academica_offline/features/estudiantes/models/estudiante_model.dart';
 import 'package:app_academica_offline/services/local/estudiante_local_store.dart';
 import 'package:app_academica_offline/services/local/nota_local_store.dart';
+import 'package:app_academica_offline/services/local/actividad_local_store.dart';
 
 class NotasScreen extends StatefulWidget {
   final String asignaturaId;
@@ -21,13 +23,15 @@ class NotasScreen extends StatefulWidget {
 class _NotasScreenState extends State<NotasScreen> {
   final EstudianteLocalStore _estudianteStore = EstudianteLocalStore();
   final NotaLocalStore _notaStore = NotaLocalStore();
+  final ActividadLocalStore _actividadStore = ActividadLocalStore();
 
   List<Estudiante> estudiantes = [];
+  List<Actividad> actividades = [];
+
   Map<String, TextEditingController> notasControllers = {};
   Map<String, TextEditingController> observacionControllers = {};
 
-  DateTime fechaSeleccionada = DateTime.now();
-  String tipoSeleccionado = 'tarea';
+  String? actividadSeleccionadaId;
 
   bool cargando = true;
   bool guardando = false;
@@ -38,20 +42,14 @@ class _NotasScreenState extends State<NotasScreen> {
     _cargarDatos();
   }
 
-  String _formatearFecha(DateTime fecha) {
-    final year = fecha.year.toString();
-    final month = fecha.month.toString().padLeft(2, '0');
-    final day = fecha.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
-  }
+  Actividad? _actividadActual() {
+    if (actividadSeleccionadaId == null) return null;
 
-  String _generarId(
-    String asignaturaId,
-    String estudianteId,
-    String fecha,
-    String tipo,
-  ) {
-    return '${asignaturaId}_${estudianteId}_${fecha}_$tipo';
+    try {
+      return actividades.firstWhere((a) => a.id == actividadSeleccionadaId);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _cargarDatos() async {
@@ -60,13 +58,30 @@ class _NotasScreenState extends State<NotasScreen> {
     final listaEstudiantes =
         _estudianteStore.getByAsignatura(widget.asignaturaId);
 
-    final fechaTexto = _formatearFecha(fechaSeleccionada);
+    final listaActividades =
+        _actividadStore.getByAsignatura(widget.asignaturaId);
 
-    final notasGuardadas = _notaStore.getByAsignaturaFechaTipo(
-      widget.asignaturaId,
-      fechaTexto,
-      tipoSeleccionado,
-    );
+    listaActividades.sort((a, b) => b.fecha.compareTo(a.fecha));
+
+    String? nuevaActividadSeleccionada = actividadSeleccionadaId;
+
+    if (listaActividades.isEmpty) {
+      nuevaActividadSeleccionada = null;
+    } else {
+      final existe = listaActividades.any(
+        (a) => a.id == nuevaActividadSeleccionada,
+      );
+
+      if (!existe) {
+        nuevaActividadSeleccionada = listaActividades.first.id;
+      }
+    }
+
+    List<Nota> notasGuardadas = [];
+
+    if (nuevaActividadSeleccionada != null) {
+      notasGuardadas = _notaStore.getByActividad(nuevaActividadSeleccionada);
+    }
 
     final Map<String, TextEditingController> nuevosNotasControllers = {};
     final Map<String, TextEditingController> nuevosObservacionControllers = {};
@@ -100,26 +115,12 @@ class _NotasScreenState extends State<NotasScreen> {
 
     setState(() {
       estudiantes = listaEstudiantes;
+      actividades = listaActividades;
+      actividadSeleccionadaId = nuevaActividadSeleccionada;
       notasControllers = nuevosNotasControllers;
       observacionControllers = nuevosObservacionControllers;
       cargando = false;
     });
-  }
-
-  Future<void> _seleccionarFecha() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: fechaSeleccionada,
-      firstDate: DateTime(2024),
-      lastDate: DateTime(2030),
-    );
-
-    if (picked != null) {
-      setState(() {
-        fechaSeleccionada = picked;
-      });
-      await _cargarDatos();
-    }
   }
 
   Future<void> _guardarNotas() async {
@@ -130,7 +131,17 @@ class _NotasScreenState extends State<NotasScreen> {
       return;
     }
 
-    final fechaTexto = _formatearFecha(fechaSeleccionada);
+    final actividad = _actividadActual();
+
+    if (actividad == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debe seleccionar una actividad'),
+        ),
+      );
+      return;
+    }
+
     final List<Nota> notasAGuardar = [];
 
     for (final estudiante in estudiantes) {
@@ -153,11 +164,11 @@ class _NotasScreenState extends State<NotasScreen> {
         return;
       }
 
-      if (valor < 0 || valor > 10) {
+      if (valor < 0 || valor > actividad.puntajeMaximo) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'La nota de ${estudiante.nombre} debe estar entre 0 y 10',
+              'La nota de ${estudiante.nombre} debe estar entre 0 y ${actividad.puntajeMaximo}',
             ),
           ),
         );
@@ -166,18 +177,14 @@ class _NotasScreenState extends State<NotasScreen> {
 
       notasAGuardar.add(
         Nota(
-          id: _generarId(
-            widget.asignaturaId,
-            estudiante.id,
-            fechaTexto,
-            tipoSeleccionado,
-          ),
+          id: '${actividad.id}_${estudiante.id}',
           asignaturaId: widget.asignaturaId,
           estudianteId: estudiante.id,
-          fecha: fechaTexto,
-          tipo: tipoSeleccionado,
+          fecha: actividad.fecha,
+          tipo: actividad.tipo,
           nota: valor,
           observacion: textoObs.isEmpty ? null : textoObs,
+          actividadId: actividad.id,
         ),
       );
     }
@@ -225,6 +232,23 @@ class _NotasScreenState extends State<NotasScreen> {
     super.dispose();
   }
 
+  String _tipoTexto(String tipo) {
+    switch (tipo) {
+      case 'tarea':
+        return 'Tarea';
+      case 'examen':
+        return 'Examen';
+      case 'participacion':
+        return 'Participación';
+      case 'proyecto':
+        return 'Proyecto';
+      case 'final':
+        return 'Nota final';
+      default:
+        return tipo;
+    }
+  }
+
   Widget _buildEstudianteCard(Estudiante estudiante) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -266,7 +290,7 @@ class _NotasScreenState extends State<NotasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final fechaTexto = _formatearFecha(fechaSeleccionada);
+    final actividad = _actividadActual();
 
     return Scaffold(
       appBar: AppBar(
@@ -280,58 +304,72 @@ class _NotasScreenState extends State<NotasScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      Card(
-                        child: ListTile(
-                          title: const Text('Fecha'),
-                          subtitle: Text(fechaTexto),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.calendar_month),
-                            onPressed: _seleccionarFecha,
+                      if (actividades.isEmpty)
+                        const Card(
+                          child: ListTile(
+                            title: Text('No hay actividades registradas'),
+                            subtitle: Text(
+                              'Primero debe crear una actividad para registrar notas',
+                            ),
                           ),
+                        )
+                      else ...[
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(actividadSeleccionadaId),
+                          initialValue: actividadSeleccionadaId,
+                          decoration: const InputDecoration(
+                            labelText: 'Actividad',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: actividades.map((actividadItem) {
+                            return DropdownMenuItem(
+                              value: actividadItem.id,
+                              child: Text(
+                                '${actividadItem.titulo} (${_tipoTexto(actividadItem.tipo)})',
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) async {
+                            setState(() {
+                              actividadSeleccionadaId = value;
+                            });
+                            await _cargarDatos();
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        initialValue: tipoSeleccionado,
-                        decoration: const InputDecoration(
-                          labelText: 'Tipo de nota',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'tarea',
-                            child: Text('Tarea'),
+                        const SizedBox(height: 12),
+                        if (actividad != null)
+                          Card(
+                            child: ListTile(
+                              title: Text(actividad.titulo),
+                              subtitle: Text(
+                                'Tipo: ${_tipoTexto(actividad.tipo)}\n'
+                                'Fecha: ${actividad.fecha}\n'
+                                'Puntaje máximo: ${actividad.puntajeMaximo}',
+                              ),
+                              isThreeLine: true,
+                            ),
                           ),
-                          DropdownMenuItem(
-                            value: 'examen',
-                            child: Text('Examen'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'final',
-                            child: Text('Nota Final'),
-                          ),
-                        ],
-                        onChanged: (value) async {
-                          setState(() {
-                            tipoSeleccionado = value ?? 'tarea';
-                          });
-                          await _cargarDatos();
-                        },
-                      ),
+                      ],
                     ],
                   ),
                 ),
                 Expanded(
-                  child: estudiantes.isEmpty
+                  child: actividades.isEmpty
                       ? const Center(
-                          child: Text('No hay estudiantes registrados'),
+                          child: Text('No hay actividades para calificar'),
                         )
-                      : ListView.builder(
-                          itemCount: estudiantes.length,
-                          itemBuilder: (context, index) {
-                            return _buildEstudianteCard(estudiantes[index]);
-                          },
-                        ),
+                      : estudiantes.isEmpty
+                          ? const Center(
+                              child: Text('No hay estudiantes registrados'),
+                            )
+                          : ListView.builder(
+                              itemCount: estudiantes.length,
+                              itemBuilder: (context, index) {
+                                return _buildEstudianteCard(
+                                  estudiantes[index],
+                                );
+                              },
+                            ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),

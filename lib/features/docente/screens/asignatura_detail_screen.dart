@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:app_academica_offline/features/estudiantes/screens/estudiantes_home_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/registrar_asistencia_screen.dart';
+import 'package:app_academica_offline/features/docente/screens/historial_asistencias_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/actividades_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/notas_screen.dart';
+import 'package:app_academica_offline/features/docente/screens/historial_notas_screen.dart';
+import 'package:app_academica_offline/features/docente/screens/resumen_notas_screen.dart';
 
 class AsignaturaDetailScreen extends StatelessWidget {
   final Map<String, dynamic> asignatura;
@@ -30,99 +33,161 @@ class AsignaturaDetailScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _item('Asignatura', nombreAsignatura),
-            _item('Curso', (asignatura['curso'] ?? '').toString()),
-            _item(
-              'Docente',
-              (asignatura['docente'] ?? 'Docente asignado').toString(),
-            ),
-            _item(
-              'Número de estudiantes',
-              (asignatura['numeroEstudiantes'] ?? 0).toString(),
-            ),
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EstudiantesHomeScreen(
-                        asignatura: asignatura,
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.people),
-                label: const Text('Estudiantes'),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _item('Asignatura', nombreAsignatura),
+              _item('Curso', (asignatura['curso'] ?? '').toString()),
+              _item(
+                'Docente',
+                (asignatura['docente'] ?? 'Docente asignado').toString(),
               ),
-            ),
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => RegistrarAsistenciaScreen(
-                        asignaturaId: asignaturaId,
-                        nombreAsignatura: nombreAsignatura,
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.checklist),
-                label: const Text('Asistencias'),
+              _item(
+                'Número de estudiantes',
+                (asignatura['numeroEstudiantes'] ?? 0).toString(),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 30),
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ActividadesScreen(
-                        asignaturaId: asignaturaId,
-                        nombreAsignatura: nombreAsignatura,
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EstudiantesHomeScreen(
+                          asignatura: asignatura,
+                        ),
                       ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.assignment),
-                label: const Text('Actividades'),
+                    );
+                  },
+                  icon: const Icon(Icons.people),
+                  label: const Text('Estudiantes'),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => NotasScreen(
-                        asignaturaId: asignaturaId,
-                        nombreAsignatura: nombreAsignatura,
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RegistrarAsistenciaScreen(
+                          asignaturaId: asignaturaId,
+                          nombreAsignatura: nombreAsignatura,
+                        ),
                       ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.edit_note),
-                label: const Text('Notas'),
+                    );
+                  },
+                  icon: const Icon(Icons.checklist),
+                  label: const Text('Asistencias'),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HistorialAsistenciasScreen(
+                          asignaturaId: asignaturaId,
+                          nombreAsignatura: nombreAsignatura,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.history),
+                  label: const Text('Historial de asistencias'),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ActividadesScreen(
+                          asignaturaId: asignaturaId,
+                          nombreAsignatura: nombreAsignatura,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.assignment),
+                  label: const Text('Actividades'),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NotasScreen(
+                          asignaturaId: asignaturaId,
+                          nombreAsignatura: nombreAsignatura,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('Notas'),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HistorialNotasScreen(
+                          asignaturaId: asignaturaId,
+                          nombreAsignatura: nombreAsignatura,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.menu_book),
+                  label: const Text('Historial de notas'),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ResumenNotasScreen(
+                          asignaturaId: asignaturaId,
+                          nombreAsignatura: nombreAsignatura,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.calculate),
+                  label: const Text('Resumen de notas'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
