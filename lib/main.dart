@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hive_flutter/hive_flutter.dart'; //para inicializar HIVE
+import 'package:hive_flutter/hive_flutter.dart';
 import 'services/local/local_db_service.dart';
-
-
 import 'firebase_options.dart';
 
 // AUTH
 import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/session_gate_screen.dart';
 
 // ADMIN
 import 'features/admin/screens/admin_home_screen.dart';
 
-// DOCENTE (por ahora placeholder)
+// DOCENTE
 import 'features/docente/screens/docente_home_screen.dart';
 
 void main() async {
@@ -24,6 +23,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   runApp(const MyApp());
 }
 
@@ -35,18 +35,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Aplicación Académica Offline-First',
-
-      /// 🔹 RUTA INICIAL
-      initialRoute: '/login',
-
-      /// 🔹 RUTAS DEL SISTEMA
+      initialRoute: '/session-gate',
       routes: {
+        '/session-gate': (_) => const SessionGateScreen(),
         '/login': (_) => const LoginScreen(),
-
-        /// 👉 PANEL ADMINISTRADOR (PRIMERO SIEMPRE)
         '/admin': (_) => const AdminHomeScreen(),
-
-        /// 👉 PANEL DOCENTE
         '/docente': (_) => const DocenteHomeScreen(),
       },
     );

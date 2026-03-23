@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app_academica_offline/services/auth/session_local_service.dart';
 import 'docente_form_screen.dart';
 import 'docente_detail_screen.dart';
 
@@ -12,6 +13,27 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final List<Map<String, dynamic>> _docentes = [];
+  final SessionLocalService _sessionLocalService = SessionLocalService();
+
+  String _nombreAdmin = 'Administrador';
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarNombreAdmin();
+  }
+
+  Future<void> _cargarNombreAdmin() async {
+    final nombreLocal = await _sessionLocalService.obtenerNombre();
+
+    if (!mounted) return;
+
+    setState(() {
+      _nombreAdmin = (nombreLocal ?? 'Administrador').trim().isEmpty
+          ? 'Administrador'
+          : nombreLocal!.trim();
+    });
+  }
 
   Future<void> _cerrarSesion() async {
     final confirmar = await showDialog<bool>(
@@ -37,6 +59,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
     if (confirmar != true) return;
 
+    await _sessionLocalService.limpiarSesion();
     await FirebaseAuth.instance.signOut();
 
     if (!mounted) return;
@@ -62,7 +85,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ],
       ),
-      body: _docentes.isEmpty ? _estadoVacio() : _listaDocentes(),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Bienvenido, $_nombreAdmin',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _docentes.isEmpty ? _estadoVacio() : _listaDocentes(),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurple.shade700,
         onPressed: _abrirFormulario,
@@ -196,3 +236,4 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 }
+

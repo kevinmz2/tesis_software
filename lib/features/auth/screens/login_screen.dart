@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:app_academica_offline/services/auth/session_local_service.dart';
 import '../models/user_role.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SessionLocalService _sessionLocalService = SessionLocalService();
 
   @override
   void dispose() {
@@ -155,16 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
         throw Exception('No se pudo obtener el usuario autenticado');
       }
 
-      debugPrint('========== LOGIN DEBUG ==========');
-      debugPrint('UID AUTH: ${user.uid}');
-      debugPrint('EMAIL AUTH: ${user.email}');
-      debugPrint('ROL SELECCIONADO UI: ${_roleToString(_selectedRole)}');
-      debugPrint('BUSCANDO EN FIRESTORE: usuarios/${user.uid}');
-
       final doc = await _firestore.collection('usuarios').doc(user.uid).get();
-
-      debugPrint('EXISTE DOCUMENTO: ${doc.exists}');
-      debugPrint('DATA DOCUMENTO: ${doc.data()}');
 
       if (!doc.exists) {
         await _auth.signOut();
@@ -179,12 +172,15 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final data = doc.data()!;
-      final String rolGuardado = (data['rol'] ?? '').toString();
-      final bool activo = data['activo'] == true;
-      final String rolSeleccionado = _roleToString(_selectedRole);
+      final dynamic activoRaw = data['activo'];
+      final String rolGuardado = (data['rol'] ?? '').toString().trim();
+      final String rolSeleccionado = _roleToString(_selectedRole).trim();
+      final String nombreGuardado = (data['nombre'] ?? '').toString().trim();
+      final String emailGuardado = (data['email'] ?? email).toString().trim();
 
-      debugPrint('ROL GUARDADO FIRESTORE: $rolGuardado');
-      debugPrint('ACTIVO FIRESTORE: $activo');
+      final bool activo = activoRaw is bool
+          ? activoRaw
+          : activoRaw.toString().toLowerCase().trim() == 'true';
 
       if (!activo) {
         await _auth.signOut();
@@ -209,6 +205,13 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
+
+      await _sessionLocalService.guardarSesion(
+        uid: user.uid,
+        email: emailGuardado,
+        nombre: nombreGuardado,
+        rol: rolGuardado,
+      );
 
       if (!mounted) return;
 

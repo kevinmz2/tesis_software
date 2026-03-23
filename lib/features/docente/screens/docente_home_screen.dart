@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:app_academica_offline/services/auth/session_local_service.dart';
 import 'package:app_academica_offline/features/docente/models/asignatura_model.dart';
 import 'package:app_academica_offline/features/docente/repositories/asignatura_repository.dart';
 import 'package:app_academica_offline/features/docente/screens/asignatura_form_screen.dart';
@@ -15,42 +15,32 @@ class DocenteHomeScreen extends StatefulWidget {
 
 class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
   final AsignaturaRepository _repository = AsignaturaRepository();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SessionLocalService _sessionLocalService = SessionLocalService();
 
   List<Asignatura> _asignaturas = [];
   String _nombreDocente = 'Docente';
-
-  String get _correoDocenteActual => _auth.currentUser?.email?.trim() ?? '';
-
-  String get _uidActual => _auth.currentUser?.uid ?? '';
+  String _correoDocenteActual = '';
 
   @override
   void initState() {
     super.initState();
-    _cargarNombreDocente();
-    _cargarAsignaturas();
+    _inicializarPantalla();
   }
 
-  Future<void> _cargarNombreDocente() async {
-    try {
-      if (_uidActual.isEmpty) return;
+  Future<void> _inicializarPantalla() async {
+    final emailLocal = await _sessionLocalService.obtenerEmail();
+    final nombreLocal = await _sessionLocalService.obtenerNombre();
 
-      final doc = await _firestore.collection('usuarios').doc(_uidActual).get();
+    if (!mounted) return;
 
-      if (!doc.exists) return;
+    setState(() {
+      _correoDocenteActual = (emailLocal ?? '').trim();
+      _nombreDocente = (nombreLocal ?? 'Docente').trim().isEmpty
+          ? 'Docente'
+          : nombreLocal!.trim();
+    });
 
-      final data = doc.data();
-      final nombre = (data?['nombre'] ?? '').toString().trim();
-
-      if (nombre.isNotEmpty && mounted) {
-        setState(() {
-          _nombreDocente = nombre;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error al cargar nombre del docente: $e');
-    }
+    _cargarAsignaturas();
   }
 
   void _cargarAsignaturas() {
@@ -83,6 +73,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
 
     if (confirmar != true) return;
 
+    await _sessionLocalService.limpiarSesion();
     await FirebaseAuth.instance.signOut();
 
     if (!mounted) return;
