@@ -68,9 +68,42 @@ class _HistorialAsistenciasScreenState
     }
   }
 
+  Color _colorEstado(String estado) {
+    switch (estado) {
+      case 'presente':
+        return Colors.green;
+      case 'ausente':
+        return Colors.red;
+      case 'atraso':
+        return Colors.orange;
+      case 'justificado':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _estadoVacio() {
     return const Center(
-      child: Text('No hay asistencias registradas'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.history, size: 80, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'No hay asistencias registradas',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Todavía no se han guardado asistencias',
+            style: TextStyle(color: Colors.black54),
+          ),
+        ],
+      ),
     );
   }
 
@@ -79,29 +112,50 @@ class _HistorialAsistenciasScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text('Historial - ${widget.nombreAsignatura}'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _asistencias.isEmpty
           ? _estadoVacio()
           : ListView.builder(
+              padding: const EdgeInsets.all(16),
               itemCount: _asistencias.length,
               itemBuilder: (context, index) {
                 final asistencia = _asistencias[index];
+                final observacion = (asistencia.observacion ?? '').trim();
+                final estadoTexto = _estadoTexto(asistencia.estado);
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  elevation: 2,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: ListTile(
-                    leading: const Icon(Icons.person),
-                    title: Text(_nombreEstudiante(asistencia.estudianteId)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          _colorEstado(asistencia.estado).withValues(alpha: 0.15),
+                      child: Icon(
+                        Icons.person,
+                        color: _colorEstado(asistencia.estado),
+                      ),
+                    ),
+                    title: Text(
+                      _nombreEstudiante(asistencia.estudianteId),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     subtitle: Text(
                       'Fecha: ${asistencia.fecha}\n'
-                      'Estado: ${_estadoTexto(asistencia.estado)}'
-                      '${(asistencia.observacion ?? '').trim().isNotEmpty ? '\nObs: ${asistencia.observacion}' : ''}',
+                      'Estado: $estadoTexto'
+                      '${observacion.isNotEmpty ? '\nObs: $observacion' : ''}',
                     ),
-                    isThreeLine:
-                        (asistencia.observacion ?? '').trim().isNotEmpty,
                   ),
                 );
               },
@@ -109,3 +163,4 @@ class _HistorialAsistenciasScreenState
     );
   }
 }
+

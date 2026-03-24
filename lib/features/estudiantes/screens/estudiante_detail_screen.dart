@@ -12,34 +12,69 @@ class EstudianteDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalle del Estudiante'),
+        title: const Text('Detalle del estudiante'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _item(
-              'Nombre',
-              (estudiante['nombre'] ?? '').toString(),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.deepPurple.shade100,
+                      child: Icon(
+                        Icons.person,
+                        color: Colors.deepPurple.shade700,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        (estudiante['nombre'] ?? '').toString(),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _item('Nombre del estudiante', (estudiante['nombre'] ?? '').toString()),
+                _item('Curso', (estudiante['curso'] ?? '').toString()),
+                _item(
+                  'Asignatura',
+                  (estudiante['asignaturaId'] ?? '').toString(),
+                  showDivider: false,
+                ),
+              ],
             ),
-            _item(
-              'Curso',
-              (estudiante['curso'] ?? '').toString(),
-            ),
-            _item(
-              'Asignatura',
-              (estudiante['asignaturaId'] ?? '').toString(),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _item(String label, String value) {
+  Widget _item(String label, String value, {bool showDivider = true}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -55,7 +90,10 @@ class EstudianteDetailScreen extends StatelessWidget {
             value,
             style: const TextStyle(fontSize: 16),
           ),
-          const Divider(),
+          if (showDivider) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+          ],
         ],
       ),
     );

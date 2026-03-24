@@ -12,8 +12,10 @@ class DocenteDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalle del Docente'),
+        title: const Text('Detalle del docente'),
         backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -21,24 +23,64 @@ class DocenteDetailScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _item('Nombres y Apellidos', docente['nombre']),
-            _item('Cédula', docente['cedula']),
-            _item('Edad', docente['edad'].toString()),
-            _item('Correo electrónico', docente['correo']),
-            _item('Teléfono', docente['telefono']),
-            _item('Institución', docente['institucion']),
-          ],
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.deepPurple.shade100,
+                      child: Icon(
+                        Icons.person,
+                        color: Colors.deepPurple.shade700,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        (docente['nombre'] ?? '').toString(),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _item('Nombres y apellidos', (docente['nombre'] ?? '').toString()),
+                _item('Cédula', (docente['cedula'] ?? '').toString()),
+                _item('Edad', (docente['edad'] ?? '').toString()),
+                _item(
+                  'Correo electrónico',
+                  (docente['correo'] ?? '').toString(),
+                ),
+                _item('Teléfono', (docente['telefono'] ?? '').toString()),
+                _item(
+                  'Institución',
+                  (docente['institucion'] ?? '').toString(),
+                  showDivider: false,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _item(String label, String value) {
+  Widget _item(String label, String value, {bool showDivider = true}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -54,7 +96,10 @@ class DocenteDetailScreen extends StatelessWidget {
             value,
             style: const TextStyle(fontSize: 16),
           ),
-          const Divider(),
+          if (showDivider) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+          ],
         ],
       ),
     );

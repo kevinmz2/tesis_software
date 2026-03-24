@@ -230,9 +230,13 @@ class _RegistrarAsistenciaScreenState
 
   Widget _buildEstudianteCard(Estudiante estudiante) {
     return Card(
+      elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -243,9 +247,9 @@ class _RegistrarAsistenciaScreenState
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             _buildEstadoDropdown(estudiante.id),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             TextField(
               controller: observaciones[estudiante.id],
               decoration: const InputDecoration(
@@ -266,6 +270,9 @@ class _RegistrarAsistenciaScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text('Asistencia - ${widget.nombreAsignatura}'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: cargando
           ? const Center(child: CircularProgressIndicator())
@@ -274,6 +281,10 @@ class _RegistrarAsistenciaScreenState
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     child: ListTile(
                       title: const Text('Fecha de asistencia'),
                       subtitle: Text(fechaTexto),
@@ -304,13 +315,27 @@ class _RegistrarAsistenciaScreenState
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: guardando ? null : _guardarAsistencia,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
                       child: guardando
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
-                          : const Text('Guardar asistencia'),
+                          : const Text(
+                              'Guardar asistencia',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -319,3 +344,4 @@ class _RegistrarAsistenciaScreenState
     );
   }
 }
+

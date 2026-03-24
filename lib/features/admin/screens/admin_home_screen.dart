@@ -49,6 +49,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Salir'),
@@ -75,27 +76,44 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestión de Docentes'),
+        title: const Text('Panel de administrador'),
         backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Cerrar sesión',
             onPressed: _cerrarSesion,
           ),
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              'Bienvenido, $_nombreAdmin',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bienvenido, $_nombreAdmin',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Gestión de docentes',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -105,8 +123,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
         onPressed: _abrirFormulario,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -222,6 +241,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
             ),
             onPressed: () {
               setState(() {
@@ -236,4 +256,3 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 }
-

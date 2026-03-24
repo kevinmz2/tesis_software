@@ -28,12 +28,20 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _cursoController.dispose();
+    _estudiantesController.dispose();
+    super.dispose();
+  }
+
   void _guardar() {
     if (_formKey.currentState!.validate()) {
       final asignatura = {
         'nombre': _nombreController.text.trim(),
         'curso': _cursoController.text.trim(),
-        'docente': 'Docente actual', // luego vendrá del login
+        'docente': 'Docente actual',
         'estudiantes': int.parse(_estudiantesController.text.trim()),
       };
 
@@ -47,81 +55,95 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
       appBar: AppBar(
         title: Text(
           widget.asignatura == null
-              ? 'Nueva Asignatura'
-              : 'Editar Asignatura',
+              ? 'Nueva asignatura'
+              : 'Editar asignatura',
         ),
         backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              /// NOMBRE
-              TextFormField(
-                controller: _nombreController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre de la asignatura',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Campo obligatorio' : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              /// CURSO
-              TextFormField(
-                controller: _cursoController,
-                decoration: const InputDecoration(
-                  labelText: 'Curso',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Campo obligatorio' : null,
-              ),
-
-              const SizedBox(height: 16),
-
-              /// NÚMERO DE ESTUDIANTES
-              TextFormField(
-                controller: _estudiantesController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Número de estudiantes',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Campo obligatorio';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Ingrese un número válido';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _guardar,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Guardar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple.shade700,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    textStyle: const TextStyle(fontSize: 16),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nombreController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre de la asignatura',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) =>
+                        value == null || value.isEmpty
+                            ? 'Campo obligatorio'
+                            : null,
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _cursoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Curso',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) =>
+                        value == null || value.isEmpty
+                            ? 'Campo obligatorio'
+                            : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _estudiantesController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Número de estudiantes',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Ingrese un número válido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _guardar,
+                      icon: const Icon(Icons.save, color: Colors.white),
+                      label: const Text(
+                        'Guardar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+

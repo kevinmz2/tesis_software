@@ -105,6 +105,10 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
             child: const Text('NO'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('SÍ'),
           ),
@@ -162,10 +166,23 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
         final actividad = _actividades[index];
 
         return Card(
+          elevation: 2,
           margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
             leading: const Icon(Icons.assignment),
-            title: Text(actividad.titulo),
+            title: Text(
+              actividad.titulo,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             subtitle: Text(
               '${_tipoTexto(actividad.tipo)} • ${actividad.fecha}\nPuntaje máximo: ${actividad.puntajeMaximo}',
             ),
@@ -174,10 +191,12 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
+                  tooltip: 'Editar',
                   icon: const Icon(Icons.edit, color: Colors.deepPurple),
                   onPressed: () => _editarActividad(actividad),
                 ),
                 IconButton(
+                  tooltip: 'Eliminar',
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () => _eliminarActividad(actividad),
                 ),
@@ -210,12 +229,18 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Actividades - ${widget.nombreAsignatura}'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _actividades.isEmpty ? _estadoVacio() : _listaActividades(),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
         onPressed: _nuevaActividad,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 }
+

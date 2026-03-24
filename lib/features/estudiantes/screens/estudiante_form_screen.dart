@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class EstudianteFormScreen extends StatefulWidget {
   final Map<String, dynamic>? estudiante;
 
-  const EstudianteFormScreen({super.key, this.estudiante});
+  const EstudianteFormScreen({
+    super.key,
+    this.estudiante,
+  });
 
   @override
-  State<EstudianteFormScreen> createState() =>
-      _EstudianteFormScreenState();
+  State<EstudianteFormScreen> createState() => _EstudianteFormScreenState();
 }
 
 class _EstudianteFormScreenState extends State<EstudianteFormScreen> {
@@ -21,10 +23,8 @@ class _EstudianteFormScreenState extends State<EstudianteFormScreen> {
     super.initState();
 
     if (widget.estudiante != null) {
-      _nombreController.text =
-          (widget.estudiante!['nombre'] ?? '').toString();
-      _cursoController.text =
-          (widget.estudiante!['curso'] ?? '').toString();
+      _nombreController.text = (widget.estudiante!['nombre'] ?? '').toString();
+      _cursoController.text = (widget.estudiante!['curso'] ?? '').toString();
     }
   }
 
@@ -48,54 +48,81 @@ class _EstudianteFormScreenState extends State<EstudianteFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool esEdicion = widget.estudiante != null;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          esEdicion ? 'Editar Estudiante' : 'Nuevo Estudiante',
+          widget.estudiante == null
+              ? 'Nuevo estudiante'
+              : 'Editar estudiante',
         ),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _nombreController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre del estudiante',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Campo obligatorio';
-                  }
-                  return null;
-                },
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nombreController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre del estudiante',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _cursoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Curso',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _guardar,
+                      icon: const Icon(Icons.save, color: Colors.white),
+                      label: const Text(
+                        'Guardar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _cursoController,
-                decoration: const InputDecoration(
-                  labelText: 'Curso',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Campo obligatorio';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _guardar,
-                  child: const Text('Guardar'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

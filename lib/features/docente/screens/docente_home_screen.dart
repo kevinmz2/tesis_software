@@ -63,6 +63,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Salir'),
@@ -89,26 +90,44 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Asignaturas'),
+        title: const Text('Panel del docente'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Cerrar sesión',
             onPressed: _cerrarSesion,
           ),
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              'Bienvenido, $_nombreDocente',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bienvenido, $_nombreDocente',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Mis asignaturas',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -117,8 +136,16 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.menu_book),
-        label: const Text('Agregar asignatura'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.menu_book, color: Colors.white),
+        label: const Text(
+          'Agregar asignatura',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         onPressed: _abrirFormulario,
       ),
     );
@@ -129,7 +156,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.menu_book_outlined, size: 90),
+          Icon(Icons.menu_book_outlined, size: 90, color: Colors.grey),
           SizedBox(height: 16),
           Text(
             'No tiene asignaturas registradas',
@@ -179,7 +206,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
               children: [
                 IconButton(
                   tooltip: 'Editar',
-                  icon: const Icon(Icons.edit),
+                  icon: const Icon(Icons.edit, color: Colors.deepPurple),
                   onPressed: () => _editarAsignatura(asignatura),
                 ),
                 IconButton(
@@ -298,3 +325,4 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
     return int.tryParse(valor.toString()) ?? 0;
   }
 }
+

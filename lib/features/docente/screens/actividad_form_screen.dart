@@ -81,8 +81,7 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
       'descripcion': _descripcionController.text.trim(),
       'tipo': _tipoSeleccionado,
       'fecha': _formatearFecha(_fechaSeleccionada),
-      'puntajeMaximo':
-          double.parse(_puntajeMaximoController.text.trim()),
+      'puntajeMaximo': double.parse(_puntajeMaximoController.text.trim()),
     };
 
     Navigator.pop(context, actividad);
@@ -97,117 +96,146 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
         title: Text(
           widget.actividad == null ? 'Nueva actividad' : 'Editar actividad',
         ),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _tituloController,
-                decoration: const InputDecoration(
-                  labelText: 'Título',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Ingrese el título';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descripcionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _tipoSeleccionado,
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de actividad',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'tarea',
-                    child: Text('Tarea'),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _tituloController,
+                    decoration: const InputDecoration(
+                      labelText: 'Título',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Ingrese el título';
+                      }
+                      return null;
+                    },
                   ),
-                  DropdownMenuItem(
-                    value: 'examen',
-                    child: Text('Examen'),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descripcionController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Descripción',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                  DropdownMenuItem(
-                    value: 'participacion',
-                    child: Text('Participación'),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _tipoSeleccionado,
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo de actividad',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'tarea',
+                        child: Text('Tarea'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'examen',
+                        child: Text('Examen'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'participacion',
+                        child: Text('Participación'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'proyecto',
+                        child: Text('Proyecto'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _tipoSeleccionado = value ?? 'tarea';
+                      });
+                    },
                   ),
-                  DropdownMenuItem(
-                    value: 'proyecto',
-                    child: Text('Proyecto'),
+                  const SizedBox(height: 16),
+                  Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      title: const Text('Fecha'),
+                      subtitle: Text(fechaTexto),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.calendar_month),
+                        onPressed: _seleccionarFecha,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _puntajeMaximoController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Puntaje máximo',
+                      border: OutlineInputBorder(),
+                      hintText: 'Ej: 10',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Ingrese el puntaje máximo';
+                      }
+
+                      final numero = double.tryParse(value.trim());
+                      if (numero == null) {
+                        return 'Ingrese un número válido';
+                      }
+
+                      if (numero <= 0) {
+                        return 'Debe ser mayor a 0';
+                      }
+
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _guardar,
+                      icon: const Icon(Icons.save, color: Colors.white),
+                      label: const Text(
+                        'Guardar actividad',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                    ),
                   ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _tipoSeleccionado = value ?? 'tarea';
-                  });
-                },
               ),
-              const SizedBox(height: 16),
-              Card(
-                child: ListTile(
-                  title: const Text('Fecha'),
-                  subtitle: Text(fechaTexto),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.calendar_month),
-                    onPressed: _seleccionarFecha,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _puntajeMaximoController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Puntaje máximo',
-                  border: OutlineInputBorder(),
-                  hintText: 'Ej: 10',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Ingrese el puntaje máximo';
-                  }
-
-                  final numero = double.tryParse(value.trim());
-                  if (numero == null) {
-                    return 'Ingrese un número válido';
-                  }
-
-                  if (numero <= 0) {
-                    return 'Debe ser mayor a 0';
-                  }
-
-                  return null;
-                },
-              ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _guardar,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Guardar actividad'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+

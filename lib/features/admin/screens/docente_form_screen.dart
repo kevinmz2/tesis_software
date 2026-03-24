@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DocenteFormScreen extends StatefulWidget {
-  final Map<String, dynamic>? docente; // null = nuevo | con data = editar
+  final Map<String, dynamic>? docente;
 
   const DocenteFormScreen({super.key, this.docente});
 
@@ -70,127 +70,143 @@ class _DocenteFormScreenState extends State<DocenteFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.docente == null
-              ? 'Nuevo docente'
-              : 'Editar docente',
+          widget.docente == null ? 'Nuevo docente' : 'Editar docente',
         ),
         backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _campoTexto('Nombres y Apellidos', _nombreController),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _campoTexto('Nombres y Apellidos', _nombreController),
 
-              _campoTexto(
-                'Cédula',
-                _cedulaController,
-                tipo: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Campo obligatorio';
-                  }
-                  if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                    return 'Solo números';
-                  }
-                  if (value.length != 10) {
-                    return 'Debe tener 10 dígitos';
-                  }
-                  return null;
-                },
-              ),
-
-              _campoTexto(
-                'Edad',
-                _edadController,
-                tipo: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Campo obligatorio';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Ingrese un número válido';
-                  }
-                  return null;
-                },
-              ),
-
-              _campoTexto(
-                'Correo electrónico',
-                _correoController,
-                tipo: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Campo obligatorio';
-                  }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                    return 'Correo inválido';
-                  }
-                  return null;
-                },
-              ),
-
-              _campoTexto(
-                'Número de teléfono',
-                _telefonoController,
-                tipo: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Campo obligatorio';
-                  }
-                  if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                    return 'Solo números';
-                  } //le agrege validacion de 10 digitos 
-                  if (value.length !=10) {
-                    return 'El numero debe contener 10 digitos';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              DropdownButtonFormField<String>(
-                value: _institucionSeleccionada,
-                decoration: const InputDecoration(
-                  labelText: 'Institución',
-                  border: OutlineInputBorder(),
-                ),
-                items: _instituciones
-                    .map(
-                      (inst) => DropdownMenuItem(
-                        value: inst,
-                        child: Text(inst),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _institucionSeleccionada = value;
-                  });
-                },
-                validator: (value) =>
-                    value == null ? 'Seleccione una institución' : null,
-              ),
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _guardar,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Guardar'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple.shade700,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    textStyle: const TextStyle(fontSize: 16),
+                  _campoTexto(
+                    'Cédula',
+                    _cedulaController,
+                    tipo: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                        return 'Solo números';
+                      }
+                      if (value.length != 10) {
+                        return 'Debe tener 10 dígitos';
+                      }
+                      return null;
+                    },
                   ),
-                ),
+
+                  _campoTexto(
+                    'Edad',
+                    _edadController,
+                    tipo: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Ingrese un número válido';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  _campoTexto(
+                    'Correo electrónico',
+                    _correoController,
+                    tipo: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                        return 'Correo inválido';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  _campoTexto(
+                    'Número de teléfono',
+                    _telefonoController,
+                    tipo: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                        return 'Solo números';
+                      }
+                      if (value.length != 10) {
+                        return 'El número debe contener 10 dígitos';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  DropdownButtonFormField<String>(
+                    value: _institucionSeleccionada,
+                    decoration: const InputDecoration(
+                      labelText: 'Institución',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _instituciones
+                        .map(
+                          (inst) => DropdownMenuItem(
+                            value: inst,
+                            child: Text(inst),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _institucionSeleccionada = value;
+                      });
+                    },
+                    validator: (value) =>
+                        value == null ? 'Seleccione una institución' : null,
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _guardar,
+                      icon: const Icon(Icons.save, color: Colors.white),
+                      label: const Text(
+                        'Guardar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

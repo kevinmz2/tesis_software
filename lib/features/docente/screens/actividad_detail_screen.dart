@@ -23,17 +23,37 @@ class ActividadDetailScreen extends StatelessWidget {
     }
   }
 
+  Color _colorTipo(String tipo) {
+    switch (tipo) {
+      case 'tarea':
+        return Colors.blue;
+      case 'examen':
+        return Colors.red;
+      case 'participacion':
+        return Colors.orange;
+      case 'proyecto':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final titulo = (actividad['titulo'] ?? '').toString();
     final descripcion = (actividad['descripcion'] ?? '').toString();
-    final tipo = _tipoTexto((actividad['tipo'] ?? '').toString());
+    final tipoOriginal = (actividad['tipo'] ?? '').toString();
+    final tipo = _tipoTexto(tipoOriginal);
     final fecha = (actividad['fecha'] ?? '').toString();
     final puntajeMaximo = (actividad['puntajeMaximo'] ?? '').toString();
+    final colorTipo = _colorTipo(tipoOriginal);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalle de Actividad'),
+        title: const Text('Detalle de actividad'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -41,26 +61,56 @@ class ActividadDetailScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _item('Título', titulo),
-            _item(
-              'Descripción',
-              descripcion.isEmpty ? 'Sin descripción' : descripcion,
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: colorTipo.withOpacity(0.15),
+                      child: Icon(
+                        Icons.assignment,
+                        color: colorTipo,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        titulo,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _item(
+                  'Descripción',
+                  descripcion.isEmpty ? 'Sin descripción' : descripcion,
+                ),
+                _item('Tipo', tipo),
+                _item('Fecha', fecha),
+                _item('Puntaje máximo', puntajeMaximo, showDivider: false),
+              ],
             ),
-            _item('Tipo', tipo),
-            _item('Fecha', fecha),
-            _item('Puntaje máximo', puntajeMaximo),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _item(String label, String value) {
+  Widget _item(String label, String value, {bool showDivider = true}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -76,9 +126,13 @@ class ActividadDetailScreen extends StatelessWidget {
             value,
             style: const TextStyle(fontSize: 16),
           ),
-          const Divider(),
+          if (showDivider) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+          ],
         ],
       ),
     );
   }
 }
+

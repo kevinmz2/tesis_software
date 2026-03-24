@@ -41,89 +41,132 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: const Color(0xFFF5F3FA),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Icon(
-                Icons.school,
-                size: 80,
-                color: Colors.deepPurple.shade400,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Aplicación Académica',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 32),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Correo electrónico',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownButton<UserRole>(
-                  value: _selectedRole,
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  items: const [
-                    DropdownMenuItem(
-                      value: UserRole.admin,
-                      child: Text('Administrador'),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 38,
+                      backgroundColor: Colors.deepPurple.shade100,
+                      child: Icon(
+                        Icons.school,
+                        size: 42,
+                        color: Colors.deepPurple.shade700,
+                      ),
                     ),
-                    DropdownMenuItem(
-                      value: UserRole.docente,
-                      child: Text('Docente'),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Aplicación Académica',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1C1C1C),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Inicia sesión para continuar',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Correo electrónico',
+                        prefixIcon: const Icon(Icons.email_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'Contraseña',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<UserRole>(
+                      initialValue: _selectedRole,
+                      decoration: InputDecoration(
+                        labelText: 'Rol',
+                        prefixIcon: const Icon(Icons.badge_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: UserRole.admin,
+                          child: Text('Administrador'),
+                        ),
+                        DropdownMenuItem(
+                          value: UserRole.docente,
+                          child: Text('Docente'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedRole = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple.shade700,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _isLoading ? null : _login,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.login),
+                        label: Text(
+                          _isLoading ? 'Ingresando...' : 'Iniciar sesión',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _selectedRole = value;
-                    });
-                  },
                 ),
               ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple.shade400,
-                  ),
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Iniciar sesión'),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -232,8 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (e.code == 'user-not-found') {
         mensaje = 'No existe un usuario con ese correo';
-      } else if (e.code == 'wrong-password' ||
-          e.code == 'invalid-credential') {
+      } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
         mensaje = 'Correo o contraseña incorrectos';
       } else if (e.code == 'invalid-email') {
         mensaje = 'El correo no es válido';

@@ -25,177 +25,205 @@ class AsignaturaDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalle de Asignatura'),
+        title: const Text('Detalle de asignatura'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _item('Asignatura', nombreAsignatura),
-              _item('Curso', (asignatura['curso'] ?? '').toString()),
-              _item(
-                'Docente',
-                (asignatura['docente'] ?? 'Docente asignado').toString(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              nombreAsignatura,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
-              _item(
-                'Número de estudiantes',
-                (asignatura['numeroEstudiantes'] ?? 0).toString(),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Información general y accesos rápidos',
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: 14,
               ),
-              const SizedBox(height: 30),
+            ),
+            const SizedBox(height: 20),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EstudiantesHomeScreen(
-                          asignatura: asignatura,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.people),
-                  label: const Text('Estudiantes'),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _item('Asignatura', nombreAsignatura),
+                    _item('Curso', (asignatura['curso'] ?? '').toString()),
+                    _item(
+                      'Docente',
+                      (asignatura['docente'] ?? 'Docente asignado').toString(),
+                    ),
+                    _item(
+                      'Número de estudiantes',
+                      (asignatura['numeroEstudiantes'] ?? 0).toString(),
+                      showDivider: false,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
+            ),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RegistrarAsistenciaScreen(
-                          asignaturaId: asignaturaId,
-                          nombreAsignatura: nombreAsignatura,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.checklist),
-                  label: const Text('Asistencias'),
-                ),
-              ),
-              const SizedBox(height: 12),
+            const SizedBox(height: 24),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => HistorialAsistenciasScreen(
-                          asignaturaId: asignaturaId,
-                          nombreAsignatura: nombreAsignatura,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.history),
-                  label: const Text('Historial de asistencias'),
-                ),
+            const Text(
+              'Módulos disponibles',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 14),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ActividadesScreen(
-                          asignaturaId: asignaturaId,
-                          nombreAsignatura: nombreAsignatura,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.assignment),
-                  label: const Text('Actividades'),
-                ),
-              ),
-              const SizedBox(height: 12),
+            _botonModulo(
+              context: context,
+              icon: Icons.people,
+              texto: 'Estudiantes',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EstudiantesHomeScreen(
+                      asignatura: asignatura,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NotasScreen(
-                          asignaturaId: asignaturaId,
-                          nombreAsignatura: nombreAsignatura,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_note),
-                  label: const Text('Notas'),
-                ),
-              ),
-              const SizedBox(height: 12),
+            _botonModulo(
+              context: context,
+              icon: Icons.checklist,
+              texto: 'Asistencias',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RegistrarAsistenciaScreen(
+                      asignaturaId: asignaturaId,
+                      nombreAsignatura: nombreAsignatura,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => HistorialNotasScreen(
-                          asignaturaId: asignaturaId,
-                          nombreAsignatura: nombreAsignatura,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.menu_book),
-                  label: const Text('Historial de notas'),
-                ),
-              ),
-              const SizedBox(height: 12),
+            _botonModulo(
+              context: context,
+              icon: Icons.history,
+              texto: 'Historial de asistencias',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HistorialAsistenciasScreen(
+                      asignaturaId: asignaturaId,
+                      nombreAsignatura: nombreAsignatura,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ResumenNotasScreen(
-                          asignaturaId: asignaturaId,
-                          nombreAsignatura: nombreAsignatura,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.calculate),
-                  label: const Text('Resumen de notas'),
-                ),
-              ),
-            ],
-          ),
+            _botonModulo(
+              context: context,
+              icon: Icons.assignment,
+              texto: 'Actividades',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ActividadesScreen(
+                      asignaturaId: asignaturaId,
+                      nombreAsignatura: nombreAsignatura,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            _botonModulo(
+              context: context,
+              icon: Icons.edit_note,
+              texto: 'Notas',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NotasScreen(
+                      asignaturaId: asignaturaId,
+                      nombreAsignatura: nombreAsignatura,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            _botonModulo(
+              context: context,
+              icon: Icons.menu_book,
+              texto: 'Historial de notas',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HistorialNotasScreen(
+                      asignaturaId: asignaturaId,
+                      nombreAsignatura: nombreAsignatura,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            _botonModulo(
+              context: context,
+              icon: Icons.calculate,
+              texto: 'Resumen de notas',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ResumenNotasScreen(
+                      asignaturaId: asignaturaId,
+                      nombreAsignatura: nombreAsignatura,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _item(String label, String value) {
+  Widget _item(String label, String value, {bool showDivider = true}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -211,9 +239,43 @@ class AsignaturaDetailScreen extends StatelessWidget {
             value,
             style: const TextStyle(fontSize: 16),
           ),
-          const Divider(),
+          if (showDivider) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+          ],
         ],
       ),
     );
   }
+
+  Widget _botonModulo({
+    required BuildContext context,
+    required IconData icon,
+    required String texto,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white),
+        label: Text(
+          texto,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.deepPurple.shade700,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
 }
+

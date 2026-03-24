@@ -45,10 +45,51 @@ class _SessionGateScreenState extends State<SessionGateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F3FA),
       body: Center(
-        child: CircularProgressIndicator(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 34,
+              backgroundColor: Colors.deepPurple.shade100,
+              child: Icon(
+                Icons.school,
+                size: 36,
+                color: Colors.deepPurple.shade700,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 34,
+              height: 34,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: Colors.deepPurple.shade700,
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Verificando sesión...',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1C1C1C),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Espere un momento',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+

@@ -251,9 +251,13 @@ class _NotasScreenState extends State<NotasScreen> {
 
   Widget _buildEstudianteCard(Estudiante estudiante) {
     return Card(
+      elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -264,7 +268,7 @@ class _NotasScreenState extends State<NotasScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             TextField(
               controller: notasControllers[estudiante.id],
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -274,7 +278,7 @@ class _NotasScreenState extends State<NotasScreen> {
                 hintText: 'Ej: 8.50',
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             TextField(
               controller: observacionControllers[estudiante.id],
               decoration: const InputDecoration(
@@ -295,6 +299,9 @@ class _NotasScreenState extends State<NotasScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Notas - ${widget.nombreAsignatura}'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: cargando
           ? const Center(child: CircularProgressIndicator())
@@ -305,8 +312,12 @@ class _NotasScreenState extends State<NotasScreen> {
                   child: Column(
                     children: [
                       if (actividades.isEmpty)
-                        const Card(
-                          child: ListTile(
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const ListTile(
                             title: Text('No hay actividades registradas'),
                             subtitle: Text(
                               'Primero debe crear una actividad para registrar notas',
@@ -339,8 +350,17 @@ class _NotasScreenState extends State<NotasScreen> {
                         const SizedBox(height: 12),
                         if (actividad != null)
                           Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                             child: ListTile(
-                              title: Text(actividad.titulo),
+                              title: Text(
+                                actividad.titulo,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               subtitle: Text(
                                 'Tipo: ${_tipoTexto(actividad.tipo)}\n'
                                 'Fecha: ${actividad.fecha}\n'
@@ -377,13 +397,27 @@ class _NotasScreenState extends State<NotasScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: guardando ? null : _guardarNotas,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
                       child: guardando
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
-                          : const Text('Guardar notas'),
+                          : const Text(
+                              'Guardar notas',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ),
                 ),

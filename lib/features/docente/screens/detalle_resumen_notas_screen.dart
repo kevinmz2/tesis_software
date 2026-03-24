@@ -39,6 +39,23 @@ class DetalleResumenNotasScreen extends StatelessWidget {
     }
   }
 
+  Color _colorTipo(String tipo) {
+    switch (tipo) {
+      case 'tarea':
+        return Colors.blue;
+      case 'examen':
+        return Colors.red;
+      case 'participacion':
+        return Colors.orange;
+      case 'proyecto':
+        return Colors.green;
+      case 'final':
+        return Colors.deepPurple;
+      default:
+        return Colors.grey;
+    }
+  }
+
   double _promedioLista(List<Nota> notas) {
     if (notas.isEmpty) return 0;
 
@@ -94,6 +111,19 @@ class DetalleResumenNotasScreen extends StatelessWidget {
     return 'Reprobado';
   }
 
+  Color _colorEstado(String estado) {
+    switch (estado) {
+      case 'Aprobado':
+        return Colors.green;
+      case 'Supletorio':
+        return Colors.orange;
+      case 'Reprobado':
+        return Colors.red;
+      default:
+        return Colors.black87;
+    }
+  }
+
   String _formatear(double valor) {
     return valor.toStringAsFixed(2);
   }
@@ -106,34 +136,53 @@ class DetalleResumenNotasScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detalle - $nombreEstudiante'),
+        title: const Text('Detalle académico'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       nombreEstudiante,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text('Promedio actual: ${_formatear(promedioActual)}'),
-                    Text('Nota final: ${_formatear(notaFinal)}'),
-                    Text('Estado: $estado'),
+                    Text(
+                      'Nota final: ${_formatear(notaFinal)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Estado: $estado',
+                      style: TextStyle(
+                        color: _colorEstado(estado),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Expanded(
               child: notasEstudiante.isEmpty
                   ? const Center(
@@ -144,12 +193,32 @@ class DetalleResumenNotasScreen extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final nota = notasEstudiante[index];
                         final observacion = (nota.observacion ?? '').trim();
+                        final colorTipo = _colorTipo(nota.tipo);
 
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
+                          elevation: 2,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                           child: ListTile(
-                            leading: const Icon(Icons.edit_note),
-                            title: Text(_nombreActividad(nota.actividadId)),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            leading: CircleAvatar(
+                              backgroundColor: colorTipo.withOpacity(0.15),
+                              child: Icon(
+                                Icons.edit_note,
+                                color: colorTipo,
+                              ),
+                            ),
+                            title: Text(
+                              _nombreActividad(nota.actividadId),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             subtitle: Text(
                               'Tipo: ${_tipoTexto(nota.tipo)}\n'
                               'Fecha: ${nota.fecha}\n'

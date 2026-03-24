@@ -38,16 +38,28 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nombreAsignatura =
+        (widget.asignatura['nombre'] ?? '').toString();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Estudiantes'),
+        title: Text('Estudiantes - $nombreAsignatura'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _estudiantes.isEmpty
-          ? _estadoVacio()
-          : _listaEstudiantes(),
+      body: _estudiantes.isEmpty ? _estadoVacio() : _listaEstudiantes(),
       floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.person_add),
-        label: const Text('Agregar estudiante'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.person_add, color: Colors.white),
+        label: const Text(
+          'Agregar estudiante',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         onPressed: _abrirFormulario,
       ),
     );
@@ -58,7 +70,7 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.school, size: 80),
+          Icon(Icons.school, size: 80, color: Colors.grey),
           SizedBox(height: 16),
           Text(
             'No hay estudiantes registrados',
@@ -68,7 +80,10 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
             ),
           ),
           SizedBox(height: 8),
-          Text('Presione el botón para agregar estudiantes'),
+          Text(
+            'Presione el botón para agregar estudiantes',
+            style: TextStyle(color: Colors.black54),
+          ),
         ],
       ),
     );
@@ -82,17 +97,36 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
         final estudiante = _estudiantes[index];
 
         return Card(
+          elevation: 2,
           margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: ListTile(
-            leading: const Icon(Icons.person),
-            title: Text(estudiante.nombre),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+            leading: CircleAvatar(
+              backgroundColor: Colors.deepPurple.shade100,
+              child: Icon(
+                Icons.person,
+                color: Colors.deepPurple.shade700,
+              ),
+            ),
+            title: Text(
+              estudiante.nombre,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             subtitle: Text('Curso: ${estudiante.curso}'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   tooltip: 'Editar',
-                  icon: const Icon(Icons.edit),
+                  icon: const Icon(Icons.edit, color: Colors.deepPurple),
                   onPressed: () => _editarEstudiante(estudiante),
                 ),
                 IconButton(
@@ -189,6 +223,10 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
             child: const Text('NO'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('SÍ'),
           ),

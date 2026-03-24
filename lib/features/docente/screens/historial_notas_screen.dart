@@ -82,9 +82,44 @@ class _HistorialNotasScreenState extends State<HistorialNotasScreen> {
     }
   }
 
+  Color _colorTipo(String tipo) {
+    switch (tipo) {
+      case 'tarea':
+        return Colors.blue;
+      case 'examen':
+        return Colors.red;
+      case 'participacion':
+        return Colors.orange;
+      case 'proyecto':
+        return Colors.green;
+      case 'final':
+        return Colors.deepPurple;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _estadoVacio() {
     return const Center(
-      child: Text('No hay notas registradas'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.edit_note, size: 80, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'No hay notas registradas',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Todavía no se han guardado notas',
+            style: TextStyle(color: Colors.black54),
+          ),
+        ],
+      ),
     );
   }
 
@@ -93,32 +128,51 @@ class _HistorialNotasScreenState extends State<HistorialNotasScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Historial - ${widget.nombreAsignatura}'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _notas.isEmpty
           ? _estadoVacio()
           : ListView.builder(
+              padding: const EdgeInsets.all(16),
               itemCount: _notas.length,
               itemBuilder: (context, index) {
                 final nota = _notas[index];
-
                 final observacion = (nota.observacion ?? '').trim();
-                final textoObservacion = observacion.isNotEmpty
-                    ? '\nObs: $observacion'
-                    : '';
+                final tipoTexto = _tipoTexto(nota.tipo);
+                final colorTipo = _colorTipo(nota.tipo);
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  elevation: 2,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: ListTile(
-                    leading: const Icon(Icons.edit_note),
-                    title: Text(_nombreEstudiante(nota.estudianteId)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    leading: CircleAvatar(
+                      backgroundColor: colorTipo.withOpacity(0.15),
+                      child: Icon(
+                        Icons.edit_note,
+                        color: colorTipo,
+                      ),
+                    ),
+                    title: Text(
+                      _nombreEstudiante(nota.estudianteId),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     subtitle: Text(
                       'Actividad: ${_nombreActividad(nota.actividadId)}\n'
-                      'Tipo: ${_tipoTexto(nota.tipo)}\n'
+                      'Tipo: $tipoTexto\n'
                       'Fecha: ${nota.fecha}\n'
-                      'Nota: ${nota.nota}$textoObservacion',
+                      'Nota: ${nota.nota}'
+                      '${observacion.isNotEmpty ? '\nObs: $observacion' : ''}',
                     ),
                   ),
                 );
@@ -127,3 +181,4 @@ class _HistorialNotasScreenState extends State<HistorialNotasScreen> {
     );
   }
 }
+
