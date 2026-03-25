@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:app_academica_offline/features/docente/models/asignatura_model.dart';
 import 'package:app_academica_offline/features/estudiantes/screens/estudiantes_home_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/registrar_asistencia_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/historial_asistencias_screen.dart';
@@ -9,7 +9,7 @@ import 'package:app_academica_offline/features/docente/screens/historial_notas_s
 import 'package:app_academica_offline/features/docente/screens/resumen_notas_screen.dart';
 
 class AsignaturaDetailScreen extends StatelessWidget {
-  final Map<String, dynamic> asignatura;
+  final Asignatura asignatura;
 
   const AsignaturaDetailScreen({
     super.key,
@@ -18,10 +18,21 @@ class AsignaturaDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('ASIGNATURA DETAIL: $asignatura');
+    final String asignaturaId = asignatura.id;
+    final String nombreAsignatura = asignatura.nombre;
 
-    final String asignaturaId = (asignatura['nombre'] ?? '').toString();
-    final String nombreAsignatura = (asignatura['nombre'] ?? '').toString();
+    final Map<String, dynamic> asignaturaMap = {
+      'id': asignatura.id,
+      'nombre': asignatura.nombre,
+      'curso': asignatura.curso,
+      'docenteId': asignatura.docenteId,
+      'docente': asignatura.docenteNombre,
+      'docenteNombre': asignatura.docenteNombre,
+      'numeroEstudiantes': asignatura.numeroEstudiantes,
+      'modulo': asignatura.moduloNombre,
+      'moduloNombre': asignatura.moduloNombre,
+      'activo': asignatura.activo,
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -29,10 +40,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -55,7 +62,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -65,24 +71,35 @@ class AsignaturaDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    _item('Asignatura', nombreAsignatura),
-                    _item('Curso', (asignatura['curso'] ?? '').toString()),
+                    _item('ID', asignatura.id),
+                    _item('Asignatura', asignatura.nombre),
+                    _item('Curso', asignatura.curso),
                     _item(
                       'Docente',
-                      (asignatura['docente'] ?? 'Docente asignado').toString(),
+                      asignatura.docenteNombre.trim().isEmpty
+                          ? 'Docente asignado'
+                          : asignatura.docenteNombre,
+                    ),
+                    _item(
+                      'Módulo',
+                      asignatura.moduloNombre.trim().isEmpty
+                          ? 'Sin módulo'
+                          : asignatura.moduloNombre,
                     ),
                     _item(
                       'Número de estudiantes',
-                      (asignatura['numeroEstudiantes'] ?? 0).toString(),
+                      asignatura.numeroEstudiantes.toString(),
+                    ),
+                    _item(
+                      'Estado',
+                      asignatura.activo ? 'Activa' : 'Inactiva',
                       showDivider: false,
                     ),
                   ],
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
             const Text(
               'Módulos disponibles',
               style: TextStyle(
@@ -91,7 +108,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-
             _botonModulo(
               context: context,
               icon: Icons.people,
@@ -101,14 +117,13 @@ class AsignaturaDetailScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => EstudiantesHomeScreen(
-                      asignatura: asignatura,
+                      asignatura: asignaturaMap,
                     ),
                   ),
                 );
               },
             ),
             const SizedBox(height: 12),
-
             _botonModulo(
               context: context,
               icon: Icons.checklist,
@@ -126,7 +141,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
-
             _botonModulo(
               context: context,
               icon: Icons.history,
@@ -144,7 +158,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
-
             _botonModulo(
               context: context,
               icon: Icons.assignment,
@@ -162,7 +175,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
-
             _botonModulo(
               context: context,
               icon: Icons.edit_note,
@@ -180,7 +192,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
-
             _botonModulo(
               context: context,
               icon: Icons.menu_book,
@@ -198,7 +209,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
-
             _botonModulo(
               context: context,
               icon: Icons.calculate,

@@ -20,6 +20,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
   List<Asignatura> _asignaturas = [];
   String _nombreDocente = 'Docente';
   String _correoDocenteActual = '';
+  String _docenteIdActual = '';
 
   @override
   void initState() {
@@ -30,11 +31,13 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
   Future<void> _inicializarPantalla() async {
     final emailLocal = await _sessionLocalService.obtenerEmail();
     final nombreLocal = await _sessionLocalService.obtenerNombre();
+    final uidActual = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     if (!mounted) return;
 
     setState(() {
       _correoDocenteActual = (emailLocal ?? '').trim();
+      _docenteIdActual = uidActual.trim();
       _nombreDocente = (nombreLocal ?? 'Docente').trim().isEmpty
           ? 'Docente'
           : nombreLocal!.trim();
@@ -44,8 +47,28 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
   }
 
   void _cargarAsignaturas() {
+    final Map<String, Asignatura> mapa = {};
+
+    if (_docenteIdActual.isNotEmpty) {
+      final porUid = _repository.getByDocenteId(_docenteIdActual);
+      for (final asignatura in porUid) {
+        mapa[asignatura.id] = asignatura;
+      }
+    }
+
+    if (_correoDocenteActual.isNotEmpty &&
+        _correoDocenteActual != _docenteIdActual) {
+      final porCorreo = _repository.getByDocenteId(_correoDocenteActual);
+      for (final asignatura in porCorreo) {
+        mapa[asignatura.id] = asignatura;
+      }
+    }
+
+    final lista = mapa.values.toList()
+      ..sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+
     setState(() {
-      _asignaturas = _repository.getByDocenteId(_correoDocenteActual);
+      _asignaturas = lista;
     });
   }
 
@@ -84,6 +107,104 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
       '/login',
       (route) => false,
     );
+  }
+
+  Future<void> _abrirFormulario() async {
+    final nuevaAsignatura = await Navigator.push<Asignatura>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const AsignaturaFormScreen(),
+      ),
+    );
+
+    if (nuevaAsignatura == null) return;
+
+    final docenteIdReal = _docenteIdActual.isNotEmpty
+        ? _docenteIdActual
+        : _correoDocenteActual;
+
+    final asignatura = nuevaAsignatura.copyWith(
+      docenteId: docenteIdReal,
+      docenteNombre: _nombreDocente,
+    );
+
+    await _repository.save(asignatura);
+    _cargarAsignaturas();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Asignatura guardada correctamente'),
+      ),
+    );
+  }
+
+  Future<void> _editarAsignatura(Asignatura actual) async {
+    final editada = await Navigator.push<Asignatura>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AsignaturaFormScreen(
+          asignatura: actual,
+        ),
+      ),
+    );
+
+    if (editada == null) return;
+
+    final asignaturaActualizada = editada.copyWith(
+      id: actual.id,
+      docenteId: actual.docenteId,
+      docenteNombre: actual.docenteNombre.isEmpty
+          ? _nombreDocente
+          : actual.docenteNombre,
+    );
+
+    await _repository.save(asignaturaActualizada);
+    _cargarAsignaturas();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Asignatura actualizada correctamente'),
+      ),
+    );
+  }
+
+  Future<void> _eliminarAsignatura(Asignatura asignatura) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmación'),
+        content: const Text(
+          '¿Está seguro que desea eliminar esta asignatura?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('NO'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('SÍ'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await _repository.delete(asignatura.id);
+      _cargarAsignaturas();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Asignatura eliminada correctamente'),
+        ),
+      );
+    }
   }
 
   @override
@@ -195,11 +316,23 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
                 color: Color(0xFF1C1C1C),
               ),
             ),
-            subtitle: Text(
-              'Curso: ${asignatura.curso}',
-              style: const TextStyle(
-                color: Color(0xFF4A4A4A),
-              ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Curso: ${asignatura.curso}',
+                  style: const TextStyle(
+                    color: Color(0xFF4A4A4A),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Módulo: ${asignatura.moduloNombre.isEmpty ? 'Sin módulo' : asignatura.moduloNombre}',
+                  style: const TextStyle(
+                    color: Color(0xFF4A4A4A),
+                  ),
+                ),
+              ],
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -224,13 +357,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => AsignaturaDetailScreen(
-                    asignatura: {
-                      'id': asignatura.id,
-                      'nombre': asignatura.nombre,
-                      'curso': asignatura.curso,
-                      'docente': _nombreDocente,
-                      'numeroEstudiantes': asignatura.numeroEstudiantes,
-                    },
+                    asignatura: asignatura,
                   ),
                 ),
               );
@@ -239,90 +366,6 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
         );
       },
     );
-  }
-
-  Future<void> _abrirFormulario() async {
-    final nuevaAsignatura = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const AsignaturaFormScreen(),
-      ),
-    );
-
-    if (nuevaAsignatura != null) {
-      final asignatura = Asignatura(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        nombre: (nuevaAsignatura['nombre'] ?? '').toString(),
-        curso: (nuevaAsignatura['curso'] ?? '').toString(),
-        docenteId: _correoDocenteActual,
-        numeroEstudiantes: _leerNumeroEstudiantes(nuevaAsignatura),
-      );
-
-      await _repository.save(asignatura);
-      _cargarAsignaturas();
-    }
-  }
-
-  Future<void> _editarAsignatura(Asignatura actual) async {
-    final editada = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AsignaturaFormScreen(
-          asignatura: {
-            'nombre': actual.nombre,
-            'curso': actual.curso,
-            'docente': _nombreDocente,
-            'numeroEstudiantes': actual.numeroEstudiantes,
-          },
-        ),
-      ),
-    );
-
-    if (editada != null) {
-      final asignaturaActualizada = Asignatura(
-        id: actual.id,
-        nombre: (editada['nombre'] ?? '').toString(),
-        curso: (editada['curso'] ?? '').toString(),
-        docenteId: actual.docenteId,
-        numeroEstudiantes: _leerNumeroEstudiantes(editada),
-      );
-
-      await _repository.save(asignaturaActualizada);
-      _cargarAsignaturas();
-    }
-  }
-
-  Future<void> _eliminarAsignatura(Asignatura asignatura) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Confirmación'),
-        content: const Text(
-          '¿Está seguro que desea eliminar esta asignatura?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('NO'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('SÍ'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmar == true) {
-      await _repository.delete(asignatura.id);
-      _cargarAsignaturas();
-    }
-  }
-
-  int _leerNumeroEstudiantes(Map<String, dynamic> data) {
-    final valor = data['numeroEstudiantes'] ?? data['estudiantes'] ?? 0;
-    if (valor is int) return valor;
-    return int.tryParse(valor.toString()) ?? 0;
   }
 }
 
