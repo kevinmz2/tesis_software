@@ -24,13 +24,17 @@ class DocenteAdapter extends TypeAdapter<Docente> {
       correo: fields[4] as String,
       telefono: fields[5] as String,
       institucionId: fields[6] as String,
+      institucionNombre: fields[7] as String,
+      activo: fields[8] as bool,
+      fechaCreacion: fields[9] as String,
+      pendienteSync: fields[10] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, Docente obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +48,15 @@ class DocenteAdapter extends TypeAdapter<Docente> {
       ..writeByte(5)
       ..write(obj.telefono)
       ..writeByte(6)
-      ..write(obj.institucionId);
+      ..write(obj.institucionId)
+      ..writeByte(7)
+      ..write(obj.institucionNombre)
+      ..writeByte(8)
+      ..write(obj.activo)
+      ..writeByte(9)
+      ..write(obj.fechaCreacion)
+      ..writeByte(10)
+      ..write(obj.pendienteSync);
   }
 
   @override

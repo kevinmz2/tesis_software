@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:app_academica_offline/features/admin/models/docente_model.dart';
 
 class DocenteDetailScreen extends StatelessWidget {
-  final Map<String, dynamic> docente;
+  final Docente docente;
 
   const DocenteDetailScreen({
     super.key,
@@ -16,12 +17,8 @@ class DocenteDetailScreen extends StatelessWidget {
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Card(
           elevation: 2,
@@ -36,20 +33,24 @@ class DocenteDetailScreen extends StatelessWidget {
                 Row(
                   children: [
                     CircleAvatar(
-                      radius: 26,
-                      backgroundColor: Colors.deepPurple.shade100,
+                      radius: 28,
+                      backgroundColor: docente.activo
+                          ? Colors.deepPurple.shade100
+                          : Colors.grey.shade300,
                       child: Icon(
                         Icons.person,
-                        color: Colors.deepPurple.shade700,
+                        color: docente.activo
+                            ? Colors.deepPurple.shade700
+                            : Colors.grey.shade700,
                         size: 28,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        (docente['nombre'] ?? '').toString(),
+                        docente.nombre,
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 19,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -57,17 +58,31 @@ class DocenteDetailScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                _item('Nombres y apellidos', (docente['nombre'] ?? '').toString()),
-                _item('Cédula', (docente['cedula'] ?? '').toString()),
-                _item('Edad', (docente['edad'] ?? '').toString()),
-                _item(
-                  'Correo electrónico',
-                  (docente['correo'] ?? '').toString(),
-                ),
-                _item('Teléfono', (docente['telefono'] ?? '').toString()),
+                _item('Nombres y apellidos', docente.nombre),
+                _item('Cédula', docente.cedula),
+                _item('Edad', docente.edad.toString()),
+                _item('Correo electrónico', docente.correo),
+                _item('Teléfono', docente.telefono),
+                _item('ID de institución', docente.institucionId),
                 _item(
                   'Institución',
-                  (docente['institucion'] ?? '').toString(),
+                  docente.institucionNombre.isEmpty
+                      ? 'No registrada'
+                      : docente.institucionNombre,
+                ),
+                _item(
+                  'Estado',
+                  docente.activo ? 'Activo' : 'Inactivo',
+                ),
+                _item(
+                  'Pendiente de sincronización',
+                  docente.pendienteSync ? 'Sí' : 'No',
+                ),
+                _item(
+                  'Fecha de creación',
+                  docente.fechaCreacion.isEmpty
+                      ? 'No registrada'
+                      : docente.fechaCreacion,
                   showDivider: false,
                 ),
               ],
@@ -105,3 +120,4 @@ class DocenteDetailScreen extends StatelessWidget {
     );
   }
 }
+

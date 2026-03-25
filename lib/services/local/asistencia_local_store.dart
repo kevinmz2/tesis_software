@@ -64,3 +64,4 @@ class AsistenciaLocalStore {
     await _box.clear();
   }
 }
+

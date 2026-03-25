@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:app_academica_offline/features/admin/models/docente_model.dart';
+import 'package:app_academica_offline/features/admin/repositories/docente_repository.dart';
 
 class DocenteFormScreen extends StatefulWidget {
-  final Map<String, dynamic>? docente;
+  final Docente? docente;
 
-  const DocenteFormScreen({super.key, this.docente});
+  const DocenteFormScreen({
+    super.key,
+    this.docente,
+  });
 
   @override
   State<DocenteFormScreen> createState() => _DocenteFormScreenState();
@@ -11,32 +16,35 @@ class DocenteFormScreen extends StatefulWidget {
 
 class _DocenteFormScreenState extends State<DocenteFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final DocenteRepository _docenteRepository = DocenteRepository();
 
   final _nombreController = TextEditingController();
   final _cedulaController = TextEditingController();
   final _edadController = TextEditingController();
   final _correoController = TextEditingController();
   final _telefonoController = TextEditingController();
+  final _institucionIdController = TextEditingController();
+  final _institucionNombreController = TextEditingController();
 
-  String? _institucionSeleccionada;
+  bool _activo = true;
+  bool _guardando = false;
 
-  final List<String> _instituciones = [
-    'Unidad Educativa Rural Loja',
-    'Escuela Comunitaria Andina',
-    'Institución Educativa Intercultural',
-  ];
+  bool get _esEdicion => widget.docente != null;
 
   @override
   void initState() {
     super.initState();
 
-    if (widget.docente != null) {
-      _nombreController.text = widget.docente!['nombre'] ?? '';
-      _cedulaController.text = widget.docente!['cedula'] ?? '';
-      _edadController.text = widget.docente!['edad']?.toString() ?? '';
-      _correoController.text = widget.docente!['correo'] ?? '';
-      _telefonoController.text = widget.docente!['telefono'] ?? '';
-      _institucionSeleccionada = widget.docente!['institucion'];
+    final docente = widget.docente;
+    if (docente != null) {
+      _nombreController.text = docente.nombre;
+      _cedulaController.text = docente.cedula;
+      _edadController.text = docente.edad.toString();
+      _correoController.text = docente.correo;
+      _telefonoController.text = docente.telefono;
+      _institucionIdController.text = docente.institucionId;
+      _institucionNombreController.text = docente.institucionNombre;
+      _activo = docente.activo;
     }
   }
 
@@ -47,22 +55,66 @@ class _DocenteFormScreenState extends State<DocenteFormScreen> {
     _edadController.dispose();
     _correoController.dispose();
     _telefonoController.dispose();
+    _institucionIdController.dispose();
+    _institucionNombreController.dispose();
     super.dispose();
   }
 
-  void _guardar() {
-    if (_formKey.currentState!.validate()) {
-      final docente = {
-        'nombre': _nombreController.text.trim(),
-        'cedula': _cedulaController.text.trim(),
-        'edad': int.parse(_edadController.text.trim()),
-        'correo': _correoController.text.trim(),
-        'telefono': _telefonoController.text.trim(),
-        'institucion': _institucionSeleccionada,
-      };
+  Future<void> _guardar() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      Navigator.pop(context, docente);
+    setState(() {
+      _guardando = true;
+    });
+
+    final docente = Docente(
+      id: widget.docente?.id ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      nombre: _nombreController.text.trim(),
+      cedula: _cedulaController.text.trim(),
+      edad: int.tryParse(_edadController.text.trim()) ?? 0,
+      correo: _correoController.text.trim(),
+      telefono: _telefonoController.text.trim(),
+      institucionId: _institucionIdController.text.trim(),
+      institucionNombre: _institucionNombreController.text.trim(),
+      activo: _activo,
+      fechaCreacion: widget.docente?.fechaCreacion ??
+          DateTime.now().toIso8601String(),
+      pendienteSync: true,
+    );
+
+    String? error;
+
+    if (_esEdicion) {
+      error = await _docenteRepository.update(docente);
+    } else {
+      error = await _docenteRepository.save(docente);
     }
+
+    if (!mounted) return;
+
+    setState(() {
+      _guardando = false;
+    });
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _esEdicion
+              ? 'Docente actualizado correctamente'
+              : 'Docente guardado correctamente',
+        ),
+      ),
+    );
+
+    Navigator.pop(context, true);
   }
 
   @override
@@ -70,141 +122,164 @@ class _DocenteFormScreenState extends State<DocenteFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.docente == null ? 'Nuevo docente' : 'Editar docente',
+          _esEdicion ? 'Editar docente' : 'Nuevo docente',
         ),
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _campoTexto('Nombres y Apellidos', _nombreController),
-
-                  _campoTexto(
-                    'Cédula',
-                    _cedulaController,
-                    tipo: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Campo obligatorio';
-                      }
-                      if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                        return 'Solo números';
-                      }
-                      if (value.length != 10) {
-                        return 'Debe tener 10 dígitos';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  _campoTexto(
-                    'Edad',
-                    _edadController,
-                    tipo: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Campo obligatorio';
-                      }
-                      if (int.tryParse(value) == null) {
-                        return 'Ingrese un número válido';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  _campoTexto(
-                    'Correo electrónico',
-                    _correoController,
-                    tipo: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Campo obligatorio';
-                      }
-                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                        return 'Correo inválido';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  _campoTexto(
-                    'Número de teléfono',
-                    _telefonoController,
-                    tipo: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Campo obligatorio';
-                      }
-                      if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                        return 'Solo números';
-                      }
-                      if (value.length != 10) {
-                        return 'El número debe contener 10 dígitos';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  DropdownButtonFormField<String>(
-                    value: _institucionSeleccionada,
-                    decoration: const InputDecoration(
-                      labelText: 'Institución',
-                      border: OutlineInputBorder(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _campoTexto(
+                      'Nombres y apellidos',
+                      _nombreController,
+                      validator: (value) {
+                        if ((value ?? '').trim().isEmpty) {
+                          return 'Campo obligatorio';
+                        }
+                        return null;
+                      },
                     ),
-                    items: _instituciones
-                        .map(
-                          (inst) => DropdownMenuItem(
-                            value: inst,
-                            child: Text(inst),
+                    _campoTexto(
+                      'Cédula',
+                      _cedulaController,
+                      tipo: TextInputType.number,
+                      validator: (value) {
+                        final texto = (value ?? '').trim();
+
+                        if (texto.isEmpty) return 'Campo obligatorio';
+                        if (!RegExp(r'^\d+$').hasMatch(texto)) {
+                          return 'Solo números';
+                        }
+                        if (texto.length != 10) {
+                          return 'Debe tener 10 dígitos';
+                        }
+                        return null;
+                      },
+                    ),
+                    _campoTexto(
+                      'Edad',
+                      _edadController,
+                      tipo: TextInputType.number,
+                      validator: (value) {
+                        final texto = (value ?? '').trim();
+
+                        if (texto.isEmpty) return 'Campo obligatorio';
+
+                        final edad = int.tryParse(texto);
+                        if (edad == null) {
+                          return 'Ingrese un número válido';
+                        }
+                        if (edad < 18) {
+                          return 'La edad mínima es 18';
+                        }
+                        return null;
+                      },
+                    ),
+                    _campoTexto(
+                      'Correo electrónico',
+                      _correoController,
+                      tipo: TextInputType.emailAddress,
+                      validator: (value) {
+                        final texto = (value ?? '').trim();
+
+                        if (texto.isEmpty) return 'Campo obligatorio';
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(texto)) {
+                          return 'Correo inválido';
+                        }
+                        return null;
+                      },
+                    ),
+                    _campoTexto(
+                      'Número de teléfono',
+                      _telefonoController,
+                      tipo: TextInputType.phone,
+                      validator: (value) {
+                        final texto = (value ?? '').trim();
+
+                        if (texto.isEmpty) return 'Campo obligatorio';
+                        if (!RegExp(r'^\d+$').hasMatch(texto)) {
+                          return 'Solo números';
+                        }
+                        if (texto.length != 10) {
+                          return 'El número debe contener 10 dígitos';
+                        }
+                        return null;
+                      },
+                    ),
+                    _campoTexto(
+                      'ID de institución',
+                      _institucionIdController,
+                      validator: (value) {
+                        if ((value ?? '').trim().isEmpty) {
+                          return 'Campo obligatorio';
+                        }
+                        return null;
+                      },
+                    ),
+                    _campoTexto(
+                      'Nombre de institución',
+                      _institucionNombreController,
+                      validator: (value) {
+                        if ((value ?? '').trim().isEmpty) {
+                          return 'Campo obligatorio';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 4),
+                    SwitchListTile(
+                      value: _activo,
+                      activeColor: Colors.deepPurple.shade700,
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Docente activo',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        _activo ? 'Estado: activo' : 'Estado: inactivo',
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _activo = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _guardando ? null : _guardar,
+                        icon: const Icon(Icons.save, color: Colors.white),
+                        label: Text(
+                          _guardando ? 'Guardando...' : 'Guardar',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _institucionSeleccionada = value;
-                      });
-                    },
-                    validator: (value) =>
-                        value == null ? 'Seleccione una institución' : null,
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _guardar,
-                      icon: const Icon(Icons.save, color: Colors.white),
-                      label: const Text(
-                        'Guardar',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          textStyle: const TextStyle(fontSize: 16),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple.shade700,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        textStyle: const TextStyle(fontSize: 16),
-                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -230,7 +305,7 @@ class _DocenteFormScreenState extends State<DocenteFormScreen> {
         ),
         validator: validator ??
             (value) =>
-                value == null || value.isEmpty ? 'Campo obligatorio' : null,
+                value == null || value.trim().isEmpty ? 'Campo obligatorio' : null,
       ),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app_academica_offline/features/admin/models/docente_model.dart';
+import 'package:app_academica_offline/features/admin/repositories/docente_repository.dart';
 import 'package:app_academica_offline/services/auth/session_local_service.dart';
 import 'docente_form_screen.dart';
 import 'docente_detail_screen.dart';
@@ -12,26 +14,43 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  final List<Map<String, dynamic>> _docentes = [];
   final SessionLocalService _sessionLocalService = SessionLocalService();
+  final DocenteRepository _docenteRepository = DocenteRepository();
 
+  List<Docente> _docentes = [];
+  bool _cargando = true;
   String _nombreAdmin = 'Administrador';
 
   @override
   void initState() {
     super.initState();
-    _cargarNombreAdmin();
+    _inicializarPantalla();
+  }
+
+  Future<void> _inicializarPantalla() async {
+    await _cargarNombreAdmin();
+    await _cargarDocentes();
   }
 
   Future<void> _cargarNombreAdmin() async {
     final nombreLocal = await _sessionLocalService.obtenerNombre();
+    final nombre = (nombreLocal ?? '').trim();
 
     if (!mounted) return;
 
     setState(() {
-      _nombreAdmin = (nombreLocal ?? 'Administrador').trim().isEmpty
-          ? 'Administrador'
-          : nombreLocal!.trim();
+      _nombreAdmin = nombre.isEmpty ? 'Administrador' : nombre;
+    });
+  }
+
+  Future<void> _cargarDocentes() async {
+    final docentes = _docenteRepository.getAll();
+
+    if (!mounted) return;
+
+    setState(() {
+      _docentes = docentes;
+      _cargando = false;
     });
   }
 
@@ -72,82 +91,123 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Panel de administrador'),
-        backgroundColor: Colors.deepPurple.shade700,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
+  Future<void> _abrirFormulario({Docente? docenteExistente}) async {
+    final resultado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DocenteFormScreen(docente: docenteExistente),
+      ),
+    );
+
+    if (resultado == true) {
+      await _cargarDocentes();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            docenteExistente == null
+                ? 'Docente guardado correctamente'
+                : 'Docente actualizado correctamente',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _abrirDetalle(Docente docente) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DocenteDetailScreen(docente: docente),
+      ),
+    );
+  }
+
+  Future<void> _confirmarEliminar(Docente docente) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Eliminar docente'),
+        content: Text(
+          '¿Está seguro que desea eliminar a ${docente.nombre}?',
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: 'Cerrar sesión',
-            onPressed: _cerrarSesion,
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
           ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bienvenido, $_nombreAdmin',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Gestión de docentes',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
             ),
-          ),
-          Expanded(
-            child: _docentes.isEmpty ? _estadoVacio() : _listaDocentes(),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.deepPurple.shade700,
-        foregroundColor: Colors.white,
-        onPressed: _abrirFormulario,
-        child: const Icon(Icons.add, color: Colors.white),
+    );
+
+    if (confirmar != true) return;
+
+    await _docenteRepository.delete(docente.id);
+    await _cargarDocentes();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Docente eliminado correctamente')),
+    );
+  }
+
+  Future<void> _cambiarEstado(Docente docente) async {
+    await _docenteRepository.cambiarEstado(
+      id: docente.id,
+      activo: !docente.activo,
+    );
+
+    await _cargarDocentes();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          docente.activo
+              ? 'Docente desactivado correctamente'
+              : 'Docente activado correctamente',
+        ),
       ),
     );
   }
 
   Widget _estadoVacio() {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.people_outline, size: 80, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: const [
+        SizedBox(height: 120),
+        Icon(
+          Icons.people_outline,
+          size: 80,
+          color: Colors.grey,
+        ),
+        SizedBox(height: 16),
+        Center(
+          child: Text(
             'No hay docentes registrados',
             style: TextStyle(fontSize: 16),
           ),
-          SizedBox(height: 8),
-          Text(
+        ),
+        SizedBox(height: 8),
+        Center(
+          child: Text(
             'Presione + para agregar un docente',
             style: TextStyle(color: Colors.black54),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -160,98 +220,168 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: ListTile(
-            leading: const Icon(Icons.person),
-            title: Text(docente['nombre']),
-            subtitle: Text(docente['institucion']),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+            leading: CircleAvatar(
+              backgroundColor: docente.activo
+                  ? Colors.deepPurple.shade100
+                  : Colors.grey.shade300,
+              child: Icon(
+                Icons.person,
+                color: docente.activo
+                    ? Colors.deepPurple.shade700
+                    : Colors.grey.shade700,
+              ),
+            ),
+            title: Text(
+              docente.nombre,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.deepPurple),
-                  onPressed: () => _editarDocente(index),
+                const SizedBox(height: 4),
+                Text(docente.correo),
+                const SizedBox(height: 4),
+                Text(
+                  docente.institucionNombre.isEmpty
+                      ? 'Sin institución'
+                      : docente.institucionNombre,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _confirmarEliminar(index),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: docente.activo
+                        ? Colors.green.shade50
+                        : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    docente.activo ? 'Activo' : 'Inactivo',
+                    style: TextStyle(
+                      color: docente.activo
+                          ? Colors.green.shade800
+                          : Colors.red.shade800,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ],
             ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => DocenteDetailScreen(docente: docente),
+            onTap: () => _abrirDetalle(docente),
+            trailing: PopupMenuButton<String>(
+              onSelected: (value) async {
+                if (value == 'ver') {
+                  await _abrirDetalle(docente);
+                } else if (value == 'editar') {
+                  await _abrirFormulario(docenteExistente: docente);
+                } else if (value == 'estado') {
+                  await _cambiarEstado(docente);
+                } else if (value == 'eliminar') {
+                  await _confirmarEliminar(docente);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'ver',
+                  child: Text('Ver detalle'),
                 ),
-              );
-            },
+                const PopupMenuItem(
+                  value: 'editar',
+                  child: Text('Editar'),
+                ),
+                PopupMenuItem(
+                  value: 'estado',
+                  child: Text(
+                    docente.activo ? 'Desactivar' : 'Activar',
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'eliminar',
+                  child: Text('Eliminar'),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Future<void> _abrirFormulario() async {
-    final nuevoDocente = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const DocenteFormScreen(),
-      ),
-    );
-
-    if (nuevoDocente != null) {
-      setState(() {
-        _docentes.add(nuevoDocente);
-      });
-    }
-  }
-
-  Future<void> _editarDocente(int index) async {
-    final docenteActual = _docentes[index];
-
-    final docenteEditado = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DocenteFormScreen(
-          docente: docenteActual,
-        ),
-      ),
-    );
-
-    if (docenteEditado != null) {
-      setState(() {
-        _docentes[index] = docenteEditado;
-      });
-    }
-  }
-
-  void _confirmarEliminar(int index) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Confirmación'),
-        content: const Text(
-          '¿Está seguro que desea eliminar este docente?',
-        ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Panel de administrador'),
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('NO'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                _docentes.removeAt(index);
-              });
-              Navigator.pop(context);
-            },
-            child: const Text('SÍ'),
+          IconButton(
+            tooltip: 'Cerrar sesión',
+            icon: const Icon(Icons.logout),
+            onPressed: _cerrarSesion,
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepPurple.shade700,
+        foregroundColor: Colors.white,
+        onPressed: () => _abrirFormulario(),
+        child: const Icon(Icons.add),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _cargarDocentes,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Bienvenido, $_nombreAdmin',
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Administre los docentes registrados localmente',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator())
+                  : _docentes.isEmpty
+                      ? _estadoVacio()
+                      : _listaDocentes(),
+            ),
+          ],
+        ),
       ),
     );
   }
