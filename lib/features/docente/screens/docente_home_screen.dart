@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:app_academica_offline/services/auth/session_local_service.dart';
+import 'package:app_academica_offline/services/local/estudiante_local_store.dart';
 import 'package:app_academica_offline/features/docente/models/asignatura_model.dart';
 import 'package:app_academica_offline/features/docente/repositories/asignatura_repository.dart';
 import 'package:app_academica_offline/features/docente/screens/asignatura_form_screen.dart';
@@ -16,6 +17,7 @@ class DocenteHomeScreen extends StatefulWidget {
 class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
   final AsignaturaRepository _repository = AsignaturaRepository();
   final SessionLocalService _sessionLocalService = SessionLocalService();
+  final EstudianteLocalStore _estudianteLocalStore = EstudianteLocalStore();
 
   List<Asignatura> _asignaturas = [];
   String _nombreDocente = 'Docente';
@@ -52,7 +54,9 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
     if (_docenteIdActual.isNotEmpty) {
       final porUid = _repository.getByDocenteId(_docenteIdActual);
       for (final asignatura in porUid) {
-        mapa[asignatura.id] = asignatura;
+        if (asignatura.activo) {
+          mapa[asignatura.id] = asignatura;
+        }
       }
     }
 
@@ -60,7 +64,9 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
         _correoDocenteActual != _docenteIdActual) {
       final porCorreo = _repository.getByDocenteId(_correoDocenteActual);
       for (final asignatura in porCorreo) {
-        mapa[asignatura.id] = asignatura;
+        if (asignatura.activo) {
+          mapa[asignatura.id] = asignatura;
+        }
       }
     }
 
@@ -241,7 +247,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Mis asignaturas',
+                  'Mis asignaturas activas',
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.black54,
@@ -280,7 +286,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
           Icon(Icons.menu_book_outlined, size: 90, color: Colors.grey),
           SizedBox(height: 16),
           Text(
-            'No tiene asignaturas registradas',
+            'No tiene asignaturas activas registradas',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -303,6 +309,8 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
       itemCount: _asignaturas.length,
       itemBuilder: (context, index) {
         final asignatura = _asignaturas[index];
+        final totalEstudiantes =
+            _estudianteLocalStore.countByAsignatura(asignatura.id);
 
         return Card(
           elevation: 2,
@@ -318,6 +326,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Curso: ${asignatura.curso}',
@@ -327,7 +336,7 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Módulo: ${asignatura.moduloNombre.isEmpty ? 'Sin módulo' : asignatura.moduloNombre}',
+                  'Estudiantes: $totalEstudiantes',
                   style: const TextStyle(
                     color: Color(0xFF4A4A4A),
                   ),
@@ -352,8 +361,8 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
                 ),
               ],
             ),
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => AsignaturaDetailScreen(
@@ -361,6 +370,9 @@ class _DocenteHomeScreenState extends State<DocenteHomeScreen> {
                   ),
                 ),
               );
+
+              if (!mounted) return;
+              _cargarAsignaturas();
             },
           ),
         );

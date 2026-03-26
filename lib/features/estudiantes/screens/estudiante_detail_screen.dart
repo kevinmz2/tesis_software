@@ -10,18 +10,20 @@ class EstudianteDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nombres = (estudiante['nombres'] ?? '').toString();
+    final apellidos = (estudiante['apellidos'] ?? '').toString();
+    final nombreCompleto = (estudiante['nombre'] ?? '').toString().trim().isNotEmpty
+        ? (estudiante['nombre'] ?? '').toString()
+        : '$apellidos $nombres'.trim();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalle del estudiante'),
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Card(
           elevation: 2,
@@ -33,32 +35,34 @@ class EstudianteDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: Colors.deepPurple.shade100,
-                      child: Icon(
-                        Icons.person,
-                        color: Colors.deepPurple.shade700,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        (estudiante['nombre'] ?? '').toString(),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  nombreCompleto,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 20),
-                _item('Nombre del estudiante', (estudiante['nombre'] ?? '').toString()),
-                _item('Curso', (estudiante['curso'] ?? '').toString()),
+                _item('Apellidos', apellidos),
+                _item('Nombres', nombres),
+                _item('Edad', (estudiante['edad'] ?? '').toString()),
+                _item('Celular', (estudiante['celular'] ?? '').toString()),
+                _item(
+                  'Tipo de sangre',
+                  (estudiante['tipoSangre'] ?? '').toString(),
+                ),
+                _item(
+                  'En caso de emergencia llamar a',
+                  (estudiante['contactoEmergenciaNombre'] ?? '').toString(),
+                ),
+                _item(
+                  'Número de emergencia',
+                  (estudiante['contactoEmergenciaCelular'] ?? '').toString(),
+                ),
+                _item(
+                  'Curso',
+                  (estudiante['curso'] ?? '').toString(),
+                ),
                 _item(
                   'Asignatura',
                   (estudiante['asignaturaId'] ?? '').toString(),
@@ -73,6 +77,8 @@ class EstudianteDetailScreen extends StatelessWidget {
   }
 
   Widget _item(String label, String value, {bool showDivider = true}) {
+    final texto = value.trim().isEmpty ? 'No registrado' : value;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -87,7 +93,7 @@ class EstudianteDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            value,
+            texto,
             style: const TextStyle(fontSize: 16),
           ),
           if (showDivider) ...[

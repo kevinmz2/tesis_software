@@ -33,7 +33,7 @@ class Asignatura {
     required this.nombre,
     required this.curso,
     required this.docenteId,
-    required this.numeroEstudiantes,
+    this.numeroEstudiantes = 0,
     this.docenteNombre = '',
     this.moduloNombre = '',
     this.activo = true,
@@ -88,3 +88,4 @@ class Asignatura {
     );
   }
 }
+

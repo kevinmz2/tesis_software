@@ -7,6 +7,7 @@ import 'package:app_academica_offline/features/docente/screens/actividades_scree
 import 'package:app_academica_offline/features/docente/screens/notas_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/historial_notas_screen.dart';
 import 'package:app_academica_offline/features/docente/screens/resumen_notas_screen.dart';
+import 'package:app_academica_offline/services/local/estudiante_local_store.dart';
 
 class AsignaturaDetailScreen extends StatelessWidget {
   final Asignatura asignatura;
@@ -20,6 +21,7 @@ class AsignaturaDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final String asignaturaId = asignatura.id;
     final String nombreAsignatura = asignatura.nombre;
+    final estudianteLocalStore = EstudianteLocalStore();
 
     final Map<String, dynamic> asignaturaMap = {
       'id': asignatura.id,
@@ -29,8 +31,6 @@ class AsignaturaDetailScreen extends StatelessWidget {
       'docente': asignatura.docenteNombre,
       'docenteNombre': asignatura.docenteNombre,
       'numeroEstudiantes': asignatura.numeroEstudiantes,
-      'modulo': asignatura.moduloNombre,
-      'moduloNombre': asignatura.moduloNombre,
       'activo': asignatura.activo,
     };
 
@@ -81,14 +81,10 @@ class AsignaturaDetailScreen extends StatelessWidget {
                           : asignatura.docenteNombre,
                     ),
                     _item(
-                      'Módulo',
-                      asignatura.moduloNombre.trim().isEmpty
-                          ? 'Sin módulo'
-                          : asignatura.moduloNombre,
-                    ),
-                    _item(
                       'Número de estudiantes',
-                      asignatura.numeroEstudiantes.toString(),
+                      estudianteLocalStore
+                          .countByAsignatura(asignatura.id)
+                          .toString(),
                     ),
                     _item(
                       'Estado',
@@ -101,7 +97,7 @@ class AsignaturaDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Módulos disponibles',
+              'Opciones disponibles',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

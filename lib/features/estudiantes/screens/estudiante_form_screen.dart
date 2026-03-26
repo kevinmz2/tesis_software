@@ -15,45 +15,73 @@ class EstudianteFormScreen extends StatefulWidget {
 class _EstudianteFormScreenState extends State<EstudianteFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _nombreController = TextEditingController();
-  final _cursoController = TextEditingController();
+  final _nombresController = TextEditingController();
+  final _apellidosController = TextEditingController();
+  final _edadController = TextEditingController();
+  final _celularController = TextEditingController();
+  final _tipoSangreController = TextEditingController();
+  final _contactoEmergenciaNombreController = TextEditingController();
+  final _contactoEmergenciaCelularController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
 
     if (widget.estudiante != null) {
-      _nombreController.text = (widget.estudiante!['nombre'] ?? '').toString();
-      _cursoController.text = (widget.estudiante!['curso'] ?? '').toString();
+      _nombresController.text =
+          (widget.estudiante!['nombres'] ?? '').toString();
+      _apellidosController.text =
+          (widget.estudiante!['apellidos'] ?? '').toString();
+      _edadController.text = (widget.estudiante!['edad'] ?? '').toString();
+      _celularController.text =
+          (widget.estudiante!['celular'] ?? '').toString();
+      _tipoSangreController.text =
+          (widget.estudiante!['tipoSangre'] ?? '').toString();
+      _contactoEmergenciaNombreController.text =
+          (widget.estudiante!['contactoEmergenciaNombre'] ?? '').toString();
+      _contactoEmergenciaCelularController.text =
+          (widget.estudiante!['contactoEmergenciaCelular'] ?? '').toString();
     }
   }
 
   @override
   void dispose() {
-    _nombreController.dispose();
-    _cursoController.dispose();
+    _nombresController.dispose();
+    _apellidosController.dispose();
+    _edadController.dispose();
+    _celularController.dispose();
+    _tipoSangreController.dispose();
+    _contactoEmergenciaNombreController.dispose();
+    _contactoEmergenciaCelularController.dispose();
     super.dispose();
   }
 
   void _guardar() {
-    if (_formKey.currentState!.validate()) {
-      final estudiante = {
-        'nombre': _nombreController.text.trim(),
-        'curso': _cursoController.text.trim(),
-      };
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      Navigator.pop(context, estudiante);
-    }
+    final estudiante = {
+      'nombres': _nombresController.text.trim(),
+      'apellidos': _apellidosController.text.trim(),
+      'edad': int.tryParse(_edadController.text.trim()) ?? 0,
+      'celular': _celularController.text.trim(),
+      'tipoSangre': _tipoSangreController.text.trim(),
+      'contactoEmergenciaNombre':
+          _contactoEmergenciaNombreController.text.trim(),
+      'contactoEmergenciaCelular':
+          _contactoEmergenciaCelularController.text.trim(),
+    };
+
+    Navigator.pop(context, estudiante);
   }
 
   @override
   Widget build(BuildContext context) {
+    final esEdicion = widget.estudiante != null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.estudiante == null
-              ? 'Nuevo estudiante'
-              : 'Editar estudiante',
+          esEdicion ? 'Editar estudiante' : 'Nuevo estudiante',
         ),
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
@@ -72,29 +100,97 @@ class _EstudianteFormScreenState extends State<EstudianteFormScreen> {
               key: _formKey,
               child: Column(
                 children: [
-                  TextFormField(
-                    controller: _nombreController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre del estudiante',
-                      border: OutlineInputBorder(),
-                    ),
+                  _campoTexto(
+                    controller: _apellidosController,
+                    label: 'Apellidos',
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                      if ((value ?? '').trim().isEmpty) {
                         return 'Campo obligatorio';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _cursoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Curso',
-                      border: OutlineInputBorder(),
-                    ),
+                  _campoTexto(
+                    controller: _nombresController,
+                    label: 'Nombres',
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                      if ((value ?? '').trim().isEmpty) {
                         return 'Campo obligatorio';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _campoTexto(
+                    controller: _edadController,
+                    label: 'Edad',
+                    tipo: TextInputType.number,
+                    validator: (value) {
+                      final texto = (value ?? '').trim();
+                      if (texto.isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      final edad = int.tryParse(texto);
+                      if (edad == null) {
+                        return 'Ingrese una edad válida';
+                      }
+                      if (edad <= 0) {
+                        return 'Ingrese una edad válida';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _campoTexto(
+                    controller: _celularController,
+                    label: 'Celular',
+                    tipo: TextInputType.phone,
+                    validator: (value) {
+                      final texto = (value ?? '').trim();
+                      if (texto.isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      if (!RegExp(r'^\d+$').hasMatch(texto)) {
+                        return 'Solo se permiten números';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _campoTexto(
+                    controller: _tipoSangreController,
+                    label: 'Tipo de sangre',
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _campoTexto(
+                    controller: _contactoEmergenciaNombreController,
+                    label: 'En caso de emergencia llamar a',
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _campoTexto(
+                    controller: _contactoEmergenciaCelularController,
+                    label: 'Número de emergencia',
+                    tipo: TextInputType.phone,
+                    validator: (value) {
+                      final texto = (value ?? '').trim();
+                      if (texto.isEmpty) {
+                        return 'Campo obligatorio';
+                      }
+                      if (!RegExp(r'^\d+$').hasMatch(texto)) {
+                        return 'Solo se permiten números';
                       }
                       return null;
                     },
@@ -105,9 +201,9 @@ class _EstudianteFormScreenState extends State<EstudianteFormScreen> {
                     child: ElevatedButton.icon(
                       onPressed: _guardar,
                       icon: const Icon(Icons.save, color: Colors.white),
-                      label: const Text(
-                        'Guardar',
-                        style: TextStyle(
+                      label: Text(
+                        esEdicion ? 'Actualizar' : 'Guardar',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                         ),
@@ -128,4 +224,22 @@ class _EstudianteFormScreenState extends State<EstudianteFormScreen> {
       ),
     );
   }
+
+  Widget _campoTexto({
+    required TextEditingController controller,
+    required String label,
+    TextInputType tipo = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: tipo,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      validator: validator,
+    );
+  }
 }
+

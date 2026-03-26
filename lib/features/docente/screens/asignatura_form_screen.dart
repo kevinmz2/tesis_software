@@ -21,8 +21,6 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
 
   final _nombreController = TextEditingController();
   final _cursoController = TextEditingController();
-  final _estudiantesController = TextEditingController();
-  final _moduloController = TextEditingController();
 
   List<Docente> _docentes = [];
   String? _docenteIdSeleccionado;
@@ -44,8 +42,6 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
     if (asignatura != null) {
       _nombreController.text = asignatura.nombre;
       _cursoController.text = asignatura.curso;
-      _estudiantesController.text = asignatura.numeroEstudiantes.toString();
-      _moduloController.text = asignatura.moduloNombre;
       _docenteIdSeleccionado =
           asignatura.docenteId.isEmpty ? null : asignatura.docenteId;
       _activo = asignatura.activo;
@@ -72,8 +68,6 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
   void dispose() {
     _nombreController.dispose();
     _cursoController.dispose();
-    _estudiantesController.dispose();
-    _moduloController.dispose();
     super.dispose();
   }
 
@@ -104,10 +98,8 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
       nombre: _nombreController.text.trim(),
       curso: _cursoController.text.trim(),
       docenteId: docenteSeleccionado.id,
-      numeroEstudiantes:
-          int.tryParse(_estudiantesController.text.trim()) ?? 0,
+      //numeroEstudiantes: 0,
       docenteNombre: docenteSeleccionado.nombre,
-      moduloNombre: _moduloController.text.trim(),
       activo: _activo,
     );
 
@@ -192,35 +184,6 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
                               },
                             ),
                           ),
-                          _campoTexto(
-                            'Módulo',
-                            _moduloController,
-                            validator: (value) {
-                              if ((value ?? '').trim().isEmpty) {
-                                return 'Campo obligatorio';
-                              }
-                              return null;
-                            },
-                          ),
-                          _campoTexto(
-                            'Número de estudiantes',
-                            _estudiantesController,
-                            tipo: TextInputType.number,
-                            validator: (value) {
-                              final texto = (value ?? '').trim();
-                              if (texto.isEmpty) {
-                                return 'Campo obligatorio';
-                              }
-                              final numero = int.tryParse(texto);
-                              if (numero == null) {
-                                return 'Ingrese un número válido';
-                              }
-                              if (numero < 0) {
-                                return 'Número inválido';
-                              }
-                              return null;
-                            },
-                          ),
                           SwitchListTile(
                             value: _activo,
                             activeColor: Colors.deepPurple.shade700,
@@ -286,9 +249,11 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
           border: const OutlineInputBorder(),
         ),
         validator: validator ??
-            (value) =>
-                value == null || value.trim().isEmpty ? 'Campo obligatorio' : null,
+            (value) => value == null || value.trim().isEmpty
+                ? 'Campo obligatorio'
+                : null,
       ),
     );
   }
 }
+

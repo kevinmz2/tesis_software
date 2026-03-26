@@ -52,6 +52,11 @@ class _NotasScreenState extends State<NotasScreen> {
     }
   }
 
+  double? _parseNota(String texto) {
+    final limpio = texto.trim().replaceAll(',', '.');
+    return double.tryParse(limpio);
+  }
+
   Future<void> _cargarDatos() async {
     setState(() => cargando = true);
 
@@ -153,12 +158,12 @@ class _NotasScreenState extends State<NotasScreen> {
         continue;
       }
 
-      final valor = double.tryParse(textoNota);
+      final valor = _parseNota(textoNota);
 
       if (valor == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('La nota de ${estudiante.nombre} no es válida'),
+            content: Text('La nota de ${estudiante.nombres} no es válida'),
           ),
         );
         return;
@@ -168,7 +173,7 @@ class _NotasScreenState extends State<NotasScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'La nota de ${estudiante.nombre} debe estar entre 0 y ${actividad.puntajeMaximo}',
+              'La nota de ${estudiante.nombres} debe estar entre 0 y ${actividad.puntajeMaximo}',
             ),
           ),
         );
@@ -250,6 +255,8 @@ class _NotasScreenState extends State<NotasScreen> {
   }
 
   Widget _buildEstudianteCard(Estudiante estudiante) {
+    final actividad = _actividadActual();
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -262,7 +269,7 @@ class _NotasScreenState extends State<NotasScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              estudiante.nombre,
+              estudiante.nombres,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -271,16 +278,20 @@ class _NotasScreenState extends State<NotasScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: notasControllers[estudiante.id],
+              textInputAction: TextInputAction.next,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Nota',
-                border: OutlineInputBorder(),
-                hintText: 'Ej: 8.50',
+                border: const OutlineInputBorder(),
+                hintText: actividad == null
+                    ? 'Ej: 8.50'
+                    : 'Máximo: ${actividad.puntajeMaximo}',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: observacionControllers[estudiante.id],
+              textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Observación',
                 border: OutlineInputBorder(),
@@ -311,6 +322,25 @@ class _NotasScreenState extends State<NotasScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
+                      Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            widget.nombreAsignatura,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Estudiantes: ${estudiantes.length}'
+                            '${actividad == null ? '' : '\nActividad actual: ${actividad.titulo}'}',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       if (actividades.isEmpty)
                         Card(
                           elevation: 2,
@@ -327,7 +357,7 @@ class _NotasScreenState extends State<NotasScreen> {
                       else ...[
                         DropdownButtonFormField<String>(
                           key: ValueKey(actividadSeleccionadaId),
-                          initialValue: actividadSeleccionadaId,
+                          value: actividadSeleccionadaId,
                           decoration: const InputDecoration(
                             labelText: 'Actividad',
                             border: OutlineInputBorder(),
@@ -426,3 +456,4 @@ class _NotasScreenState extends State<NotasScreen> {
     );
   }
 }
+

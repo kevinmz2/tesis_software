@@ -35,6 +35,12 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
     });
   }
 
+  void _mostrarMensaje(String texto) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(texto)),
+    );
+  }
+
   Future<void> _nuevaActividad() async {
     final data = await Navigator.push(
       context,
@@ -57,6 +63,9 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
 
     await _actividadStore.upsert(actividad);
     _cargarActividades();
+
+    if (!mounted) return;
+    _mostrarMensaje('Actividad registrada correctamente');
   }
 
   Future<void> _editarActividad(Actividad actual) async {
@@ -89,6 +98,9 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
 
     await _actividadStore.upsert(actividadActualizada);
     _cargarActividades();
+
+    if (!mounted) return;
+    _mostrarMensaje('Actividad actualizada correctamente');
   }
 
   Future<void> _eliminarActividad(Actividad actividad) async {
@@ -119,6 +131,9 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
     if (confirmar == true) {
       await _actividadStore.delete(actividad.id);
       _cargarActividades();
+
+      if (!mounted) return;
+      _mostrarMensaje('Actividad eliminada correctamente');
     }
   }
 
@@ -137,6 +152,42 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
     }
   }
 
+  Widget _encabezado() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.nombreAsignatura,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Actividades registradas: ${_actividades.length}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _estadoVacio() {
     return const Center(
       child: Column(
@@ -150,7 +201,7 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            'Presione + para agregar una actividad',
+            'Presione el botón para agregar una actividad',
             style: TextStyle(color: Colors.black54),
           ),
         ],
@@ -160,7 +211,7 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
 
   Widget _listaActividades() {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       itemCount: _actividades.length,
       itemBuilder: (context, index) {
         final actividad = _actividades[index];
@@ -202,8 +253,8 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
                 ),
               ],
             ),
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => ActividadDetailScreen(
@@ -217,6 +268,9 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
                   ),
                 ),
               );
+
+              if (!mounted) return;
+              _cargarActividades();
             },
           ),
         );
@@ -228,17 +282,31 @@ class _ActividadesScreenState extends State<ActividadesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Actividades - ${widget.nombreAsignatura}'),
+        title: const Text('Registro de actividades'),
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _actividades.isEmpty ? _estadoVacio() : _listaActividades(),
-      floatingActionButton: FloatingActionButton(
+      body: Column(
+        children: [
+          _encabezado(),
+          Expanded(
+            child: _actividades.isEmpty ? _estadoVacio() : _listaActividades(),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         onPressed: _nuevaActividad,
-        child: const Icon(Icons.add, color: Colors.white),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'Agregar actividad',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }

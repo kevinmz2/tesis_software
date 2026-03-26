@@ -18,24 +18,42 @@ class EstudianteAdapter extends TypeAdapter<Estudiante> {
     };
     return Estudiante(
       id: fields[0] as String,
-      nombre: fields[1] as String,
+      nombres: fields[1] as String,
       curso: fields[2] as String,
       asignaturaId: fields[3] as String,
+      apellidos: fields[4] as String,
+      edad: fields[5] as int,
+      celular: fields[6] as String,
+      tipoSangre: fields[7] as String,
+      contactoEmergenciaNombre: fields[8] as String,
+      contactoEmergenciaCelular: fields[9] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Estudiante obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.nombre)
+      ..write(obj.nombres)
       ..writeByte(2)
       ..write(obj.curso)
       ..writeByte(3)
-      ..write(obj.asignaturaId);
+      ..write(obj.asignaturaId)
+      ..writeByte(4)
+      ..write(obj.apellidos)
+      ..writeByte(5)
+      ..write(obj.edad)
+      ..writeByte(6)
+      ..write(obj.celular)
+      ..writeByte(7)
+      ..write(obj.tipoSangre)
+      ..writeByte(8)
+      ..write(obj.contactoEmergenciaNombre)
+      ..writeByte(9)
+      ..write(obj.contactoEmergenciaCelular);
   }
 
   @override

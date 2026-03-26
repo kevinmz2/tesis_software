@@ -20,6 +20,12 @@ class EstudianteLocalStore {
     return _box.get(id);
   }
 
+  int countByAsignatura(String asignaturaId) {
+    return _box.values
+        .where((e) => e.asignaturaId == asignaturaId)
+        .length;
+  }
+
   Future<void> upsert(Estudiante estudiante) async {
     await _box.put(estudiante.id, estudiante);
   }
@@ -32,3 +38,4 @@ class EstudianteLocalStore {
     await _box.clear();
   }
 }
+

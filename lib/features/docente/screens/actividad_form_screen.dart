@@ -21,6 +21,7 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
 
   String _tipoSeleccionado = 'tarea';
   DateTime _fechaSeleccionada = DateTime.now();
+  bool _guardando = false;
 
   @override
   void initState() {
@@ -58,6 +59,11 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
     return '$year-$month-$day';
   }
 
+  double? _parsePuntaje(String texto) {
+    final limpio = texto.trim().replaceAll(',', '.');
+    return double.tryParse(limpio);
+  }
+
   Future<void> _seleccionarFecha() async {
     final picked = await showDatePicker(
       context: context,
@@ -74,14 +80,22 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
   }
 
   void _guardar() {
-    if (!_formKey.currentState!.validate()) return;
+    if (_guardando) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final puntaje = _parsePuntaje(_puntajeMaximoController.text);
+    if (puntaje == null) return;
+
+    setState(() {
+      _guardando = true;
+    });
 
     final actividad = {
       'titulo': _tituloController.text.trim(),
       'descripcion': _descripcionController.text.trim(),
       'tipo': _tipoSeleccionado,
       'fecha': _formatearFecha(_fechaSeleccionada),
-      'puntajeMaximo': double.parse(_puntajeMaximoController.text.trim()),
+      'puntajeMaximo': puntaje,
     };
 
     Navigator.pop(context, actividad);
@@ -119,9 +133,14 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
                       labelText: 'Título',
                       border: OutlineInputBorder(),
                     ),
+                    textInputAction: TextInputAction.next,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                      final texto = (value ?? '').trim();
+                      if (texto.isEmpty) {
                         return 'Ingrese el título';
+                      }
+                      if (texto.length < 3) {
+                        return 'Ingrese un título más descriptivo';
                       }
                       return null;
                     },
@@ -130,14 +149,16 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
                   TextFormField(
                     controller: _descripcionController,
                     maxLines: 3,
+                    textInputAction: TextInputAction.newline,
                     decoration: const InputDecoration(
                       labelText: 'Descripción',
                       border: OutlineInputBorder(),
+                      hintText: 'Detalle breve de la actividad',
                     ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    initialValue: _tipoSeleccionado,
+                    value: _tipoSeleccionado,
                     decoration: const InputDecoration(
                       labelText: 'Tipo de actividad',
                       border: OutlineInputBorder(),
@@ -167,36 +188,39 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  Card(
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      title: const Text('Fecha'),
-                      subtitle: Text(fechaTexto),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.calendar_month),
-                        onPressed: _seleccionarFecha,
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _seleccionarFecha,
+                    child: Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        title: const Text('Fecha'),
+                        subtitle: Text(fechaTexto),
+                        trailing: const Icon(Icons.calendar_month),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _puntajeMaximoController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Puntaje máximo',
                       border: OutlineInputBorder(),
-                      hintText: 'Ej: 10',
+                      hintText: 'Ej: 10 o 10.0',
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                      final texto = (value ?? '').trim();
+                      if (texto.isEmpty) {
                         return 'Ingrese el puntaje máximo';
                       }
 
-                      final numero = double.tryParse(value.trim());
+                      final numero = _parsePuntaje(texto);
                       if (numero == null) {
                         return 'Ingrese un número válido';
                       }
@@ -212,11 +236,11 @@ class _ActividadFormScreenState extends State<ActividadFormScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _guardar,
+                      onPressed: _guardando ? null : _guardar,
                       icon: const Icon(Icons.save, color: Colors.white),
-                      label: const Text(
-                        'Guardar actividad',
-                        style: TextStyle(
+                      label: Text(
+                        _guardando ? 'Guardando...' : 'Guardar actividad',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                         ),

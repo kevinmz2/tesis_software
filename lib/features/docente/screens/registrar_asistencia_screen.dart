@@ -49,27 +49,50 @@ class _RegistrarAsistenciaScreenState
     return '${asignaturaId}_${estudianteId}_$fecha';
   }
 
+  String _estadoTexto(String estado) {
+    switch (estado) {
+      case 'presente':
+        return 'Presente';
+      case 'ausente':
+        return 'Ausente';
+      case 'atraso':
+        return 'Atraso';
+      case 'justificado':
+        return 'Justificado';
+      default:
+        return estado;
+    }
+  }
+
+  Color _colorEstado(String estado) {
+    switch (estado) {
+      case 'presente':
+        return Colors.green;
+      case 'ausente':
+        return Colors.red;
+      case 'atraso':
+        return Colors.orange;
+      case 'justificado':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _mostrarMensaje(String texto) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(texto)),
+    );
+  }
+
   Future<void> _cargarDatos() async {
     setState(() => cargando = true);
-
-    debugPrint('========== REGISTRAR ASISTENCIA ==========');
-    debugPrint('ASIGNATURA ID RECIBIDO: ${widget.asignaturaId}');
-    debugPrint('NOMBRE ASIGNATURA: ${widget.nombreAsignatura}');
-
-    final todosLosEstudiantes = _estudianteStore.getAll();
-    debugPrint('TOTAL ESTUDIANTES GUARDADOS: ${todosLosEstudiantes.length}');
-
-    for (final e in todosLosEstudiantes) {
-      debugPrint(
-        'ESTUDIANTE => id: ${e.id}, nombre: ${e.nombre}, curso: ${e.curso}, asignaturaId: ${e.asignaturaId}',
-      );
-    }
 
     final listaEstudiantes =
         _estudianteStore.getByAsignatura(widget.asignaturaId);
 
-    debugPrint(
-      'TOTAL ESTUDIANTES FILTRADOS POR ASIGNATURA: ${listaEstudiantes.length}',
+    listaEstudiantes.sort(
+      (a, b) => a.nombres.toLowerCase().compareTo(b.nombres.toLowerCase()),
     );
 
     final fechaTexto = _formatearFecha(fechaSeleccionada);
@@ -77,10 +100,6 @@ class _RegistrarAsistenciaScreenState
     final asistenciasGuardadas = _asistenciaStore.getByAsignaturaAndFecha(
       widget.asignaturaId,
       fechaTexto,
-    );
-
-    debugPrint(
-      'TOTAL ASISTENCIAS GUARDADAS PARA ESTA FECHA: ${asistenciasGuardadas.length}',
     );
 
     final Map<String, String> nuevosEstados = {};
@@ -133,9 +152,7 @@ class _RegistrarAsistenciaScreenState
 
   Future<void> _guardarAsistencia() async {
     if (estudiantes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay estudiantes en esta asignatura')),
-      );
+      _mostrarMensaje('No hay estudiantes en esta asignatura');
       return;
     }
 
@@ -160,26 +177,11 @@ class _RegistrarAsistenciaScreenState
 
       await _asistenciaStore.upsertMany(asistencias);
 
-      final verificadas = _asistenciaStore.getByAsignaturaAndFecha(
-        widget.asignaturaId,
-        fechaTexto,
-      );
-
-      debugPrint(
-        'TOTAL ASISTENCIAS GUARDADAS DESPUÉS DE SAVE: ${verificadas.length}',
-      );
-
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Asistencia guardada correctamente')),
-      );
+      _mostrarMensaje('Asistencia guardada correctamente');
     } catch (e) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar asistencia: $e')),
-      );
+      _mostrarMensaje('Error al guardar asistencia: $e');
     } finally {
       if (mounted) {
         setState(() => guardando = false);
@@ -196,8 +198,10 @@ class _RegistrarAsistenciaScreenState
   }
 
   Widget _buildEstadoDropdown(String estudianteId) {
+    final estadoActual = estados[estudianteId] ?? 'presente';
+
     return DropdownButtonFormField<String>(
-      initialValue: estados[estudianteId] ?? 'presente',
+      value: estadoActual,
       decoration: const InputDecoration(
         labelText: 'Estado',
         border: OutlineInputBorder(),
@@ -228,7 +232,87 @@ class _RegistrarAsistenciaScreenState
     );
   }
 
+  Widget _encabezado() {
+    final fechaTexto = _formatearFecha(fechaSeleccionada);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.nombreAsignatura,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Estudiantes: ${estudiantes.length}',
+                style: const TextStyle(
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _seleccionarFecha,
+                child: Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    title: const Text('Fecha de asistencia'),
+                    subtitle: Text(fechaTexto),
+                    trailing: const Icon(Icons.calendar_month),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _estadoVacio() {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.people_outline, size: 80, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'No hay estudiantes registrados',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Primero debe agregar estudiantes a esta asignatura',
+            style: TextStyle(color: Colors.black54),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEstudianteCard(Estudiante estudiante) {
+    final estadoActual = estados[estudiante.id] ?? 'presente';
+    final colorEstado = _colorEstado(estadoActual);
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -240,18 +324,40 @@ class _RegistrarAsistenciaScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              estudiante.nombre,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: colorEstado.withOpacity(0.15),
+                  child: Icon(
+                    Icons.person,
+                    color: colorEstado,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    estudiante.nombres,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Text(
+                  _estadoTexto(estadoActual),
+                  style: TextStyle(
+                    color: colorEstado,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             _buildEstadoDropdown(estudiante.id),
             const SizedBox(height: 12),
             TextField(
               controller: observaciones[estudiante.id],
+              textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Observación',
                 border: OutlineInputBorder(),
@@ -265,8 +371,6 @@ class _RegistrarAsistenciaScreenState
 
   @override
   Widget build(BuildContext context) {
-    final fechaTexto = _formatearFecha(fechaSeleccionada);
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Asistencia - ${widget.nombreAsignatura}'),
@@ -278,30 +382,10 @@ class _RegistrarAsistenciaScreenState
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: ListTile(
-                      title: const Text('Fecha de asistencia'),
-                      subtitle: Text(fechaTexto),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.calendar_month),
-                        onPressed: _seleccionarFecha,
-                      ),
-                    ),
-                  ),
-                ),
+                _encabezado(),
                 Expanded(
                   child: estudiantes.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No hay estudiantes registrados para esta asignatura',
-                          ),
-                        )
+                      ? _estadoVacio()
                       : ListView.builder(
                           itemCount: estudiantes.length,
                           itemBuilder: (context, index) {

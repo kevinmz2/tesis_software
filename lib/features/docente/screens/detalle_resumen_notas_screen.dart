@@ -71,7 +71,12 @@ class DetalleResumenNotasScreen extends StatelessWidget {
     return notasEstudiante.where((n) => n.tipo == tipo).toList();
   }
 
-  double _notaFinal() {
+  double? _promedioActual() {
+    if (notasEstudiante.isEmpty) return null;
+    return _promedioLista(notasEstudiante);
+  }
+
+  double? _notaFinal() {
     final promediosComponentes = <double>[];
 
     final tareas = _filtrarPorTipo('tarea');
@@ -95,7 +100,7 @@ class DetalleResumenNotasScreen extends StatelessWidget {
       promediosComponentes.add(_promedioLista(participaciones));
     }
 
-    if (promediosComponentes.isEmpty) return 0;
+    if (promediosComponentes.isEmpty) return null;
 
     final suma = promediosComponentes.fold<double>(
       0,
@@ -105,7 +110,8 @@ class DetalleResumenNotasScreen extends StatelessWidget {
     return suma / promediosComponentes.length;
   }
 
-  String _estadoAcademico(double notaFinal) {
+  String _estadoAcademico(double? notaFinal) {
+    if (notaFinal == null) return 'Sin calificar';
     if (notaFinal >= 7) return 'Aprobado';
     if (notaFinal >= 5) return 'Supletorio';
     return 'Reprobado';
@@ -119,6 +125,8 @@ class DetalleResumenNotasScreen extends StatelessWidget {
         return Colors.orange;
       case 'Reprobado':
         return Colors.red;
+      case 'Sin calificar':
+        return Colors.blueGrey;
       default:
         return Colors.black87;
     }
@@ -128,11 +136,37 @@ class DetalleResumenNotasScreen extends StatelessWidget {
     return valor.toStringAsFixed(2);
   }
 
+  String _formatearOpcional(double? valor) {
+    if (valor == null) return '--';
+    return valor.toStringAsFixed(2);
+  }
+
+  Widget _chipInfo(String label, String valor) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8, top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.shade50,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$label: $valor',
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final promedioActual = _promedioLista(notasEstudiante);
+    final promedioActual = _promedioActual();
     final notaFinal = _notaFinal();
     final estado = _estadoAcademico(notaFinal);
+
+    final notasOrdenadas = [...notasEstudiante]
+      ..sort((a, b) => b.fecha.compareTo(a.fecha));
 
     return Scaffold(
       appBar: AppBar(
@@ -163,9 +197,21 @@ class DetalleResumenNotasScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text('Promedio actual: ${_formatear(promedioActual)}'),
+                    Wrap(
+                      children: [
+                        _chipInfo(
+                          'Actividades calificadas',
+                          notasEstudiante.length.toString(),
+                        ),
+                        _chipInfo(
+                          'Promedio actual',
+                          _formatearOpcional(promedioActual),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     Text(
-                      'Nota final: ${_formatear(notaFinal)}',
+                      'Nota final: ${_formatearOpcional(notaFinal)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                       ),
@@ -178,20 +224,27 @@ class DetalleResumenNotasScreen extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (notasEstudiante.isEmpty) ...[
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Este estudiante aún no tiene notas registradas.',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 14),
             Expanded(
-              child: notasEstudiante.isEmpty
+              child: notasOrdenadas.isEmpty
                   ? const Center(
                       child: Text('No hay notas registradas'),
                     )
                   : ListView.builder(
-                      itemCount: notasEstudiante.length,
+                      itemCount: notasOrdenadas.length,
                       itemBuilder: (context, index) {
-                        final nota = notasEstudiante[index];
+                        final nota = notasOrdenadas[index];
                         final observacion = (nota.observacion ?? '').trim();
                         final colorTipo = _colorTipo(nota.tipo);
 
@@ -222,7 +275,7 @@ class DetalleResumenNotasScreen extends StatelessWidget {
                             subtitle: Text(
                               'Tipo: ${_tipoTexto(nota.tipo)}\n'
                               'Fecha: ${nota.fecha}\n'
-                              'Nota: ${nota.nota}'
+                              'Nota: ${_formatear(nota.nota)}'
                               '${observacion.isNotEmpty ? '\nObs: $observacion' : ''}',
                             ),
                           ),
@@ -236,3 +289,4 @@ class DetalleResumenNotasScreen extends StatelessWidget {
     );
   }
 }
+

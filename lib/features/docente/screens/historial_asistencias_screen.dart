@@ -37,7 +37,18 @@ class _HistorialAsistenciasScreenState
     final asistencias = _asistenciaStore.getByAsignatura(widget.asignaturaId);
     final estudiantes = _estudianteStore.getByAsignatura(widget.asignaturaId);
 
-    asistencias.sort((a, b) => b.fecha.compareTo(a.fecha));
+    estudiantes.sort(
+      (a, b) => a.nombres.toLowerCase().compareTo(b.nombres.toLowerCase()),
+    );
+
+    asistencias.sort((a, b) {
+      final comparacionFecha = b.fecha.compareTo(a.fecha);
+      if (comparacionFecha != 0) return comparacionFecha;
+
+      final nombreA = _nombreEstudianteDesdeLista(estudiantes, a.estudianteId);
+      final nombreB = _nombreEstudianteDesdeLista(estudiantes, b.estudianteId);
+      return nombreA.toLowerCase().compareTo(nombreB.toLowerCase());
+    });
 
     setState(() {
       _asistencias = asistencias;
@@ -45,9 +56,20 @@ class _HistorialAsistenciasScreenState
     });
   }
 
+  String _nombreEstudianteDesdeLista(
+    List<Estudiante> estudiantes,
+    String estudianteId,
+  ) {
+    try {
+      return estudiantes.firstWhere((e) => e.id == estudianteId).nombres;
+    } catch (_) {
+      return 'Estudiante no encontrado';
+    }
+  }
+
   String _nombreEstudiante(String estudianteId) {
     try {
-      return _estudiantes.firstWhere((e) => e.id == estudianteId).nombre;
+      return _estudiantes.firstWhere((e) => e.id == estudianteId).nombres;
     } catch (_) {
       return 'Estudiante no encontrado';
     }
@@ -83,12 +105,64 @@ class _HistorialAsistenciasScreenState
     }
   }
 
+  Widget _chipInfo(String label, String valor) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.shade50,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$label: $valor',
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _encabezado() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.nombreAsignatura,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                children: [
+                  _chipInfo('Asistencias', _asistencias.length.toString()),
+                  _chipInfo('Estudiantes', _estudiantes.length.toString()),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _estadoVacio() {
     return const Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.history, size: 80, color: Colors.grey),
+          Icon(Icons.fact_check_outlined, size: 80, color: Colors.grey),
           SizedBox(height: 16),
           Text(
             'No hay asistencias registradas',
@@ -99,7 +173,7 @@ class _HistorialAsistenciasScreenState
           ),
           SizedBox(height: 8),
           Text(
-            'Todavía no se han guardado asistencias',
+            'Primero debe registrar la asistencia de los estudiantes',
             style: TextStyle(color: Colors.black54),
           ),
         ],
@@ -107,58 +181,69 @@ class _HistorialAsistenciasScreenState
     );
   }
 
+  Widget _listaAsistencias() {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      itemCount: _asistencias.length,
+      itemBuilder: (context, index) {
+        final asistencia = _asistencias[index];
+        final observacion = (asistencia.observacion ?? '').trim();
+        final estadoTexto = _estadoTexto(asistencia.estado);
+        final colorEstado = _colorEstado(asistencia.estado);
+
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+            leading: CircleAvatar(
+              backgroundColor: colorEstado.withOpacity(0.15),
+              child: Icon(
+                Icons.person,
+                color: colorEstado,
+              ),
+            ),
+            title: Text(
+              _nombreEstudiante(asistencia.estudianteId),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Fecha: ${asistencia.fecha}\n'
+              'Estado: $estadoTexto'
+              '${observacion.isNotEmpty ? '\nObs: $observacion' : ''}',
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Historial - ${widget.nombreAsignatura}'),
+        title: const Text('Historial de asistencias'),
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _asistencias.isEmpty
           ? _estadoVacio()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _asistencias.length,
-              itemBuilder: (context, index) {
-                final asistencia = _asistencias[index];
-                final observacion = (asistencia.observacion ?? '').trim();
-                final estadoTexto = _estadoTexto(asistencia.estado);
-
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor:
-                          _colorEstado(asistencia.estado).withValues(alpha: 0.15),
-                      child: Icon(
-                        Icons.person,
-                        color: _colorEstado(asistencia.estado),
-                      ),
-                    ),
-                    title: Text(
-                      _nombreEstudiante(asistencia.estudianteId),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Fecha: ${asistencia.fecha}\n'
-                      'Estado: $estadoTexto'
-                      '${observacion.isNotEmpty ? '\nObs: $observacion' : ''}',
-                    ),
-                  ),
-                );
-              },
+          : Column(
+              children: [
+                _encabezado(),
+                Expanded(
+                  child: _listaAsistencias(),
+                ),
+              ],
             ),
     );
   }

@@ -41,6 +41,11 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
     final estudiantes = _estudianteStore.getByAsignatura(widget.asignaturaId);
     final actividades = _actividadStore.getByAsignatura(widget.asignaturaId);
 
+    estudiantes.sort(
+      (a, b) => a.nombres.toLowerCase().compareTo(b.nombres.toLowerCase()),
+    );
+    actividades.sort((a, b) => b.fecha.compareTo(a.fecha));
+
     setState(() {
       _notas = notas;
       _estudiantes = estudiantes;
@@ -69,12 +74,19 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
     return suma / notas.length;
   }
 
-  double _promedioActual(String estudianteId) {
+  double? _promedioActual(String estudianteId) {
     final notasEstudiante = _notasPorEstudiante(estudianteId);
+    if (notasEstudiante.isEmpty) return null;
     return _promedioLista(notasEstudiante);
   }
 
-  double _notaFinal(String estudianteId) {
+  double? _promedioPorTipo(String estudianteId, String tipo) {
+    final notasTipo = _notasPorEstudianteYTipo(estudianteId, tipo);
+    if (notasTipo.isEmpty) return null;
+    return _promedioLista(notasTipo);
+  }
+
+  double? _notaFinal(String estudianteId) {
     final promediosComponentes = <double>[];
 
     final tareas = _notasPorEstudianteYTipo(estudianteId, 'tarea');
@@ -99,7 +111,7 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
       promediosComponentes.add(_promedioLista(participaciones));
     }
 
-    if (promediosComponentes.isEmpty) return 0;
+    if (promediosComponentes.isEmpty) return null;
 
     final suma = promediosComponentes.fold<double>(
       0,
@@ -109,7 +121,8 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
     return suma / promediosComponentes.length;
   }
 
-  String _estadoAcademico(double notaFinal) {
+  String _estadoAcademico(double? notaFinal) {
+    if (notaFinal == null) return 'Sin calificar';
     if (notaFinal >= 7) return 'Aprobado';
     if (notaFinal >= 5) return 'Supletorio';
     return 'Reprobado';
@@ -123,12 +136,19 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
         return Colors.orange;
       case 'Reprobado':
         return Colors.red;
+      case 'Sin calificar':
+        return Colors.blueGrey;
       default:
         return Colors.black87;
     }
   }
 
-  String _formatear(double valor) {
+  //String _formatear(double valor) {
+  //  return valor.toStringAsFixed(2);
+  //}
+
+  String _formatearOpcional(double? valor) {
+    if (valor == null) return '--';
     return valor.toStringAsFixed(2);
   }
 
@@ -174,6 +194,41 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
     );
   }
 
+  Widget _encabezado() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.nombreAsignatura,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                children: [
+                  _chipInfo('Estudiantes', _estudiantes.length.toString()),
+                  _chipInfo('Notas', _notas.length.toString()),
+                  _chipInfo('Actividades', _actividades.length.toString()),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final noHayDatos = _estudiantes.isEmpty || _notas.isEmpty;
@@ -187,121 +242,137 @@ class _ResumenNotasScreenState extends State<ResumenNotasScreen> {
       ),
       body: noHayDatos
           ? _estadoVacio()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _estudiantes.length,
-              itemBuilder: (context, index) {
-                final estudiante = _estudiantes[index];
-                final notasEstudiante = _notasPorEstudiante(estudiante.id);
+          : Column(
+              children: [
+                _encabezado(),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    itemCount: _estudiantes.length,
+                    itemBuilder: (context, index) {
+                      final estudiante = _estudiantes[index];
+                      final notasEstudiante =
+                          _notasPorEstudiante(estudiante.id);
 
-                final promedioActual = _promedioActual(estudiante.id);
-                final notaFinal = _notaFinal(estudiante.id);
-                final estado = _estadoAcademico(notaFinal);
+                      final promedioActual = _promedioActual(estudiante.id);
+                      final notaFinal = _notaFinal(estudiante.id);
+                      final estado = _estadoAcademico(notaFinal);
 
-                final promedioTareas = _promedioLista(
-                  _notasPorEstudianteYTipo(estudiante.id, 'tarea'),
-                );
-                final promedioExamenes = _promedioLista(
-                  _notasPorEstudianteYTipo(estudiante.id, 'examen'),
-                );
-                final promedioProyectos = _promedioLista(
-                  _notasPorEstudianteYTipo(estudiante.id, 'proyecto'),
-                );
-                final promedioParticipacion = _promedioLista(
-                  _notasPorEstudianteYTipo(estudiante.id, 'participacion'),
-                );
+                      final promedioTareas =
+                          _promedioPorTipo(estudiante.id, 'tarea');
+                      final promedioExamenes =
+                          _promedioPorTipo(estudiante.id, 'examen');
+                      final promedioProyectos =
+                          _promedioPorTipo(estudiante.id, 'proyecto');
+                      final promedioParticipacion =
+                          _promedioPorTipo(estudiante.id, 'participacion');
 
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    leading: CircleAvatar(
-                      radius: 24,
-                      backgroundColor:
-                          _colorEstado(estado).withOpacity(0.15),
-                      child: Icon(
-                        Icons.person,
-                        color: _colorEstado(estado),
-                      ),
-                    ),
-                    title: Text(
-                      estudiante.nombre,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Actividades calificadas: ${notasEstudiante.length}',
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            children: [
-                              _chipInfo(
-                                'Promedio actual',
-                                _formatear(promedioActual),
-                              ),
-                              _chipInfo(
-                                'Tareas',
-                                _formatear(promedioTareas),
-                              ),
-                              _chipInfo(
-                                'Exámenes',
-                                _formatear(promedioExamenes),
-                              ),
-                              _chipInfo(
-                                'Proyectos',
-                                _formatear(promedioProyectos),
-                              ),
-                              _chipInfo(
-                                'Participación',
-                                _formatear(promedioParticipacion),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Nota final: ${_formatear(notaFinal)}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Estado: $estado',
-                            style: TextStyle(
+                      return Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.only(bottom: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          leading: CircleAvatar(
+                            radius: 24,
+                            backgroundColor:
+                                _colorEstado(estado).withOpacity(0.15),
+                            child: Icon(
+                              Icons.person,
                               color: _colorEstado(estado),
-                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DetalleResumenNotasScreen(
-                            nombreEstudiante: estudiante.nombre,
-                            notasEstudiante: notasEstudiante,
-                            actividades: _actividades,
+                          title: Text(
+                            estudiante.nombres,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
                           ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Actividades calificadas: ${notasEstudiante.length}',
+                                ),
+                                const SizedBox(height: 10),
+                                if (notasEstudiante.isEmpty) ...[
+                                  const Text(
+                                    'Este estudiante aún no tiene notas registradas.',
+                                  ),
+                                  const SizedBox(height: 8),
+                                ] else
+                                  Wrap(
+                                    children: [
+                                      _chipInfo(
+                                        'Promedio actual',
+                                        _formatearOpcional(promedioActual),
+                                      ),
+                                      _chipInfo(
+                                        'Tareas',
+                                        _formatearOpcional(promedioTareas),
+                                      ),
+                                      _chipInfo(
+                                        'Exámenes',
+                                        _formatearOpcional(promedioExamenes),
+                                      ),
+                                      _chipInfo(
+                                        'Proyectos',
+                                        _formatearOpcional(promedioProyectos),
+                                      ),
+                                      _chipInfo(
+                                        'Participación',
+                                        _formatearOpcional(
+                                          promedioParticipacion,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Nota final: ${_formatearOpcional(notaFinal)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Estado: $estado',
+                                  style: TextStyle(
+                                    color: _colorEstado(estado),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => DetalleResumenNotasScreen(
+                                  nombreEstudiante: estudiante.nombres,
+                                  notasEstudiante: notasEstudiante,
+                                  actividades: _actividades,
+                                ),
+                              ),
+                            );
+
+                            if (!mounted) return;
+                            _cargarDatos();
+                          },
                         ),
                       );
                     },
                   ),
-                );
-              },
+                ),
+              ],
             ),
     );
   }
 }
+

@@ -14,8 +14,7 @@ class EstudiantesHomeScreen extends StatefulWidget {
   });
 
   @override
-  State<EstudiantesHomeScreen> createState() =>
-      _EstudiantesHomeScreenState();
+  State<EstudiantesHomeScreen> createState() => _EstudiantesHomeScreenState();
 }
 
 class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
@@ -29,10 +28,22 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
   }
 
   void _cargarEstudiantes() {
-    final String asignaturaId = (widget.asignatura['nombre'] ?? '').toString();
+    final String asignaturaId = (widget.asignatura['id'] ?? '').toString();
+
+    final lista = _repository.getByAsignatura(asignaturaId).toList()
+      ..sort((a, b) {
+        final apellidoA = a.apellidos.trim().toLowerCase();
+        final apellidoB = b.apellidos.trim().toLowerCase();
+        final cmpApellido = apellidoA.compareTo(apellidoB);
+        if (cmpApellido != 0) return cmpApellido;
+
+        final nombreA = a.nombres.trim().toLowerCase();
+        final nombreB = b.nombres.trim().toLowerCase();
+        return nombreA.compareTo(nombreB);
+      });
 
     setState(() {
-      _estudiantes = _repository.getByAsignatura(asignaturaId);
+      _estudiantes = lista;
     });
   }
 
@@ -40,6 +51,8 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
   Widget build(BuildContext context) {
     final nombreAsignatura =
         (widget.asignatura['nombre'] ?? '').toString();
+    final cursoAsignatura =
+        (widget.asignatura['curso'] ?? '').toString();
 
     return Scaffold(
       appBar: AppBar(
@@ -48,7 +61,46 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _estudiantes.isEmpty ? _estadoVacio() : _listaEstudiantes(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Asignatura: $nombreAsignatura',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Curso: $cursoAsignatura',
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Total de estudiantes: ${_estudiantes.length}',
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _estudiantes.isEmpty ? _estadoVacio() : _listaEstudiantes(),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.deepPurple.shade700,
         foregroundColor: Colors.white,
@@ -95,6 +147,9 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
       itemCount: _estudiantes.length,
       itemBuilder: (context, index) {
         final estudiante = _estudiantes[index];
+        final nombreCompleto = estudiante.nombreCompleto.trim().isEmpty
+            ? estudiante.nombres
+            : estudiante.nombreCompleto;
 
         return Card(
           elevation: 2,
@@ -107,20 +162,23 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
               horizontal: 16,
               vertical: 10,
             ),
-            leading: CircleAvatar(
-              backgroundColor: Colors.deepPurple.shade100,
-              child: Icon(
-                Icons.person,
-                color: Colors.deepPurple.shade700,
-              ),
-            ),
             title: Text(
-              estudiante.nombre,
+              '${index + 1}. $nombreCompleto',
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
               ),
             ),
-            subtitle: Text('Curso: ${estudiante.curso}'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (estudiante.edad > 0)
+                  Text('Edad: ${estudiante.edad}'),
+                if (estudiante.tipoSangre.trim().isNotEmpty)
+                  Text('Tipo de sangre: ${estudiante.tipoSangre}'),
+                if (estudiante.celular.trim().isNotEmpty)
+                  Text('Celular: ${estudiante.celular}'),
+              ],
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -146,7 +204,16 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
                   builder: (_) => EstudianteDetailScreen(
                     estudiante: {
                       'id': estudiante.id,
-                      'nombre': estudiante.nombre,
+                      'nombre': nombreCompleto,
+                      'nombres': estudiante.nombres,
+                      'apellidos': estudiante.apellidos,
+                      'edad': estudiante.edad,
+                      'celular': estudiante.celular,
+                      'tipoSangre': estudiante.tipoSangre,
+                      'contactoEmergenciaNombre':
+                          estudiante.contactoEmergenciaNombre,
+                      'contactoEmergenciaCelular':
+                          estudiante.contactoEmergenciaCelular,
                       'curso': estudiante.curso,
                       'asignaturaId': estudiante.asignaturaId,
                     },
@@ -168,19 +235,29 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
       ),
     );
 
-    if (nuevo != null) {
-      final String asignaturaId = (widget.asignatura['nombre'] ?? '').toString();
+    if (nuevo == null) return;
 
-      final estudiante = Estudiante(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        nombre: nuevo['nombre'],
-        curso: nuevo['curso'],
-        asignaturaId: asignaturaId,
-      );
+    final String asignaturaId = (widget.asignatura['id'] ?? '').toString();
+    final String cursoAsignatura =
+        (widget.asignatura['curso'] ?? '').toString();
 
-      await _repository.save(estudiante);
-      _cargarEstudiantes();
-    }
+    final estudiante = Estudiante(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      nombres: (nuevo['nombres'] ?? '').toString(),
+      apellidos: (nuevo['apellidos'] ?? '').toString(),
+      edad: int.tryParse((nuevo['edad'] ?? '0').toString()) ?? 0,
+      celular: (nuevo['celular'] ?? '').toString(),
+      tipoSangre: (nuevo['tipoSangre'] ?? '').toString(),
+      contactoEmergenciaNombre:
+          (nuevo['contactoEmergenciaNombre'] ?? '').toString(),
+      contactoEmergenciaCelular:
+          (nuevo['contactoEmergenciaCelular'] ?? '').toString(),
+      curso: cursoAsignatura,
+      asignaturaId: asignaturaId,
+    );
+
+    await _repository.save(estudiante);
+    _cargarEstudiantes();
   }
 
   Future<void> _editarEstudiante(Estudiante actual) async {
@@ -189,24 +266,37 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
       MaterialPageRoute(
         builder: (_) => EstudianteFormScreen(
           estudiante: {
-            'nombre': actual.nombre,
-            'curso': actual.curso,
+            'nombres': actual.nombres,
+            'apellidos': actual.apellidos,
+            'edad': actual.edad,
+            'celular': actual.celular,
+            'tipoSangre': actual.tipoSangre,
+            'contactoEmergenciaNombre': actual.contactoEmergenciaNombre,
+            'contactoEmergenciaCelular': actual.contactoEmergenciaCelular,
           },
         ),
       ),
     );
 
-    if (editado != null) {
-      final estudianteActualizado = Estudiante(
-        id: actual.id,
-        nombre: editado['nombre'],
-        curso: editado['curso'],
-        asignaturaId: actual.asignaturaId,
-      );
+    if (editado == null) return;
 
-      await _repository.save(estudianteActualizado);
-      _cargarEstudiantes();
-    }
+    final estudianteActualizado = Estudiante(
+      id: actual.id,
+      nombres: (editado['nombres'] ?? '').toString(),
+      apellidos: (editado['apellidos'] ?? '').toString(),
+      edad: int.tryParse((editado['edad'] ?? '0').toString()) ?? 0,
+      celular: (editado['celular'] ?? '').toString(),
+      tipoSangre: (editado['tipoSangre'] ?? '').toString(),
+      contactoEmergenciaNombre:
+          (editado['contactoEmergenciaNombre'] ?? '').toString(),
+      contactoEmergenciaCelular:
+          (editado['contactoEmergenciaCelular'] ?? '').toString(),
+      curso: actual.curso,
+      asignaturaId: actual.asignaturaId,
+    );
+
+    await _repository.save(estudianteActualizado);
+    _cargarEstudiantes();
   }
 
   Future<void> _eliminarEstudiante(Estudiante estudiante) async {
@@ -234,9 +324,9 @@ class _EstudiantesHomeScreenState extends State<EstudiantesHomeScreen> {
       ),
     );
 
-    if (confirmar == true) {
-      await _repository.delete(estudiante.id);
-      _cargarEstudiantes();
-    }
+    if (confirmar != true) return;
+
+    await _repository.delete(estudiante.id);
+    _cargarEstudiantes();
   }
 }

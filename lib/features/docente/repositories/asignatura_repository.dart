@@ -68,10 +68,6 @@ class AsignaturaRepository {
       return 'Debe asignar un docente.';
     }
 
-    if (asignatura.moduloNombre.trim().isEmpty) {
-      return 'El módulo es obligatorio.';
-    }
-
     await _localStore.upsert(asignatura);
     return null;
   }

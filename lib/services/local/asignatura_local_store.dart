@@ -5,12 +5,15 @@ import 'local_db_service.dart';
 class AsignaturaLocalStore {
   Box<Asignatura> get _box => LocalDbService.asignaturasBox();
 
-  List<Asignatura> getAll() {
-    final asignaturas = _box.values.toList();
+  List<Asignatura> _ordenarPorNombre(List<Asignatura> asignaturas) {
     asignaturas.sort(
       (a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()),
     );
     return asignaturas;
+  }
+
+  List<Asignatura> getAll() {
+    return _ordenarPorNombre(_box.values.toList());
   }
 
   Asignatura? getById(String id) {
@@ -18,45 +21,55 @@ class AsignaturaLocalStore {
   }
 
   List<Asignatura> getActivas() {
-    return _box.values.where((a) => a.activo).toList();
+    return _ordenarPorNombre(
+      _box.values.where((a) => a.activo).toList(),
+    );
   }
 
   List<Asignatura> getByDocenteId(String docenteId) {
-    return _box.values
-        .where(
-          (a) =>
-              a.docenteId.trim().toLowerCase() ==
-              docenteId.trim().toLowerCase(),
-        )
-        .toList();
+    return _ordenarPorNombre(
+      _box.values
+          .where(
+            (a) =>
+                a.docenteId.trim().toLowerCase() ==
+                docenteId.trim().toLowerCase(),
+          )
+          .toList(),
+    );
   }
 
   List<Asignatura> getByDocenteNombre(String docenteNombre) {
-    return _box.values
-        .where(
-          (a) =>
-              a.docenteNombre.trim().toLowerCase() ==
-              docenteNombre.trim().toLowerCase(),
-        )
-        .toList();
+    return _ordenarPorNombre(
+      _box.values
+          .where(
+            (a) =>
+                a.docenteNombre.trim().toLowerCase() ==
+                docenteNombre.trim().toLowerCase(),
+          )
+          .toList(),
+    );
   }
 
   List<Asignatura> getByModuloNombre(String moduloNombre) {
-    return _box.values
-        .where(
-          (a) =>
-              a.moduloNombre.trim().toLowerCase() ==
-              moduloNombre.trim().toLowerCase(),
-        )
-        .toList();
+    return _ordenarPorNombre(
+      _box.values
+          .where(
+            (a) =>
+                a.moduloNombre.trim().toLowerCase() ==
+                moduloNombre.trim().toLowerCase(),
+          )
+          .toList(),
+    );
   }
 
   List<Asignatura> getByCurso(String curso) {
-    return _box.values
-        .where(
-          (a) => a.curso.trim().toLowerCase() == curso.trim().toLowerCase(),
-        )
-        .toList();
+    return _ordenarPorNombre(
+      _box.values
+          .where(
+            (a) => a.curso.trim().toLowerCase() == curso.trim().toLowerCase(),
+          )
+          .toList(),
+    );
   }
 
   int countByDocenteId(String docenteId) {
@@ -120,3 +133,4 @@ class AsignaturaLocalStore {
     await _box.clear();
   }
 }
+
