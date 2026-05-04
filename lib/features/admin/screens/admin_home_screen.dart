@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app_academica_offline/core/sync/sync_manager.dart';
 import 'package:app_academica_offline/features/admin/models/docente_model.dart';
 import 'package:app_academica_offline/features/admin/repositories/docente_repository.dart';
 import 'package:app_academica_offline/features/docente/models/asignatura_model.dart';
@@ -19,24 +20,40 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final SessionLocalService _sessionLocalService = SessionLocalService();
   final DocenteRepository _docenteRepository = DocenteRepository();
   final AsignaturaLocalStore _asignaturaLocalStore = AsignaturaLocalStore();
+  final SyncManager _syncManager = SyncManager();
+
+  final TextEditingController _busquedaDocentesController =
+      TextEditingController();
+  final TextEditingController _busquedaAsignaturasController =
+      TextEditingController();
 
   List<Docente> _docentes = [];
   List<Asignatura> _asignaturas = [];
 
   bool _cargando = true;
+  bool _sincronizando = false;
   String _nombreAdmin = 'Administrador';
 
-  String _busqueda = '';
+  String _busquedaDocentesAplicada = '';
   String _filtroEstado = 'todos';
   String _filtroInstitucion = 'todas';
 
-  String _busquedaAsignatura = '';
+  String _busquedaAsignaturasAplicada = '';
   String _filtroDocenteAsignatura = 'todos';
 
   @override
   void initState() {
     super.initState();
+    _syncManager.iniciarEscucha();
     _recargarDatos();
+  }
+
+  @override
+  void dispose() {
+    _syncManager.detenerEscucha();
+    _busquedaDocentesController.dispose();
+    _busquedaAsignaturasController.dispose();
+    super.dispose();
   }
 
   Future<void> _recargarDatos() async {
@@ -60,6 +77,47 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       _asignaturas = asignaturas;
       _cargando = false;
     });
+  }
+
+  Future<void> _sincronizarDatos() async {
+    if (_sincronizando) return;
+
+    setState(() {
+      _sincronizando = true;
+    });
+
+    try {
+      await _syncManager.sincronizarPendientes();
+      await _recargarDatos();
+
+      final pendientes = await _syncManager.cantidadPendientes();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            pendientes == 0
+                ? 'Sincronización completada correctamente'
+                : 'Sincronización ejecutada. Pendientes restantes: $pendientes',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo sincronizar: $e'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _sincronizando = false;
+        });
+      }
+    }
   }
 
   Future<void> _cerrarSesion() async {
@@ -191,6 +249,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
+  String _normalizarTexto(String texto) {
+    return texto
+        .trim()
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n');
+  }
+
   String _nombreDocentePorId(String docenteId) {
     for (final docente in _docentes) {
       if (docente.id.trim().toLowerCase() == docenteId.trim().toLowerCase()) {
@@ -232,14 +302,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   List<Docente> get _docentesFiltrados {
     return _docentes.where((docente) {
-      final textoBusqueda = _busqueda.trim().toLowerCase();
+      final textoBusqueda = _normalizarTexto(_busquedaDocentesAplicada);
+
+      final nombre = _normalizarTexto(docente.nombre);
+      final correo = _normalizarTexto(docente.correo);
+      final cedula = _normalizarTexto(docente.cedula);
 
       final coincideBusqueda =
           textoBusqueda.isEmpty ||
-          docente.nombre.toLowerCase().contains(textoBusqueda) ||
-          docente.correo.toLowerCase().contains(textoBusqueda) ||
-          docente.cedula.toLowerCase().contains(textoBusqueda) ||
-          docente.institucionNombre.toLowerCase().contains(textoBusqueda);
+          nombre.contains(textoBusqueda) ||
+          correo.contains(textoBusqueda) ||
+          cedula.contains(textoBusqueda);
 
       final coincideEstado =
           _filtroEstado == 'todos' ||
@@ -248,7 +321,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
       final coincideInstitucion =
           _filtroInstitucion == 'todas' ||
-          docente.institucionNombre == _filtroInstitucion;
+          docente.institucionNombre.trim() == _filtroInstitucion.trim();
 
       return coincideBusqueda && coincideEstado && coincideInstitucion;
     }).toList();
@@ -267,13 +340,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   List<Asignatura> get _asignaturasFiltradas {
     return _asignaturas.where((asignatura) {
-      final texto = _busquedaAsignatura.trim().toLowerCase();
-      final docenteNombre = _nombreDocenteAsignatura(asignatura).toLowerCase();
+      final texto = _normalizarTexto(_busquedaAsignaturasAplicada);
+      final nombreAsignatura = _normalizarTexto(asignatura.nombre);
+      final curso = _normalizarTexto(asignatura.curso);
+      final docenteNombre = _normalizarTexto(
+        _nombreDocenteAsignatura(asignatura),
+      );
 
       final coincideBusqueda =
           texto.isEmpty ||
-          asignatura.nombre.toLowerCase().contains(texto) ||
-          asignatura.curso.toLowerCase().contains(texto) ||
+          nombreAsignatura.contains(texto) ||
+          curso.contains(texto) ||
           docenteNombre.contains(texto);
 
       final coincideDocente =
@@ -289,17 +366,34 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int get _totalAsignaturasActivas =>
       _asignaturas.where((a) => a.activo).length;
 
-  void _limpiarFiltrosDocentes() {
+  void _buscarDocentes() {
     setState(() {
-      _busqueda = '';
+      _busquedaDocentesAplicada = _busquedaDocentesController.text.trim();
+    });
+  }
+
+  void _buscarAsignaturas() {
+    setState(() {
+      _busquedaAsignaturasAplicada =
+          _busquedaAsignaturasController.text.trim();
+    });
+  }
+
+  void _limpiarFiltrosDocentes() {
+    _busquedaDocentesController.clear();
+
+    setState(() {
+      _busquedaDocentesAplicada = '';
       _filtroEstado = 'todos';
       _filtroInstitucion = 'todas';
     });
   }
 
   void _limpiarFiltrosAsignaturas() {
+    _busquedaAsignaturasController.clear();
+
     setState(() {
-      _busquedaAsignatura = '';
+      _busquedaAsignaturasAplicada = '';
       _filtroDocenteAsignatura = 'todos';
     });
   }
@@ -390,16 +484,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         child: Column(
           children: [
             TextField(
+              controller: _busquedaDocentesController,
+              textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Buscar por nombre, correo, cédula o institución',
+                hintText: 'Buscar por nombre, correo o cédula',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: _busqueda.isEmpty
+                suffixIcon: _busquedaDocentesController.text.trim().isEmpty
                     ? null
                     : IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
+                          _busquedaDocentesController.clear();
+
                           setState(() {
-                            _busqueda = '';
+                            _busquedaDocentesAplicada = '';
                           });
                         },
                       ),
@@ -409,9 +507,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               ),
               onChanged: (value) {
                 setState(() {
-                  _busqueda = value;
+                  _busquedaDocentesAplicada = value.trim();
                 });
               },
+              onSubmitted: (_) => _buscarDocentes(),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -444,8 +543,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ],
                     onChanged: (value) {
                       if (value == null) return;
+
                       setState(() {
                         _filtroEstado = value;
+                        _busquedaDocentesAplicada =
+                            _busquedaDocentesController.text.trim();
                       });
                     },
                   ),
@@ -474,10 +576,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ],
                     onChanged: (value) {
                       if (value == null) return;
+
                       setState(() {
                         _filtroInstitucion = value;
+                        _busquedaDocentesAplicada =
+                            _busquedaDocentesController.text.trim();
                       });
                     },
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _buscarDocentes,
+                  icon: const Icon(Icons.search),
+                  label: const Text('Buscar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple.shade700,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                   ),
                 ),
                 ElevatedButton.icon(
@@ -512,28 +630,34 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         child: Column(
           children: [
             TextField(
+              controller: _busquedaAsignaturasController,
+              textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Buscar por asignatura, curso o docente',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: _busquedaAsignatura.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _busquedaAsignatura = '';
-                          });
-                        },
-                      ),
+                suffixIcon:
+                    _busquedaAsignaturasController.text.trim().isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _busquedaAsignaturasController.clear();
+
+                              setState(() {
+                                _busquedaAsignaturasAplicada = '';
+                              });
+                            },
+                          ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               onChanged: (value) {
                 setState(() {
-                  _busquedaAsignatura = value;
+                  _busquedaAsignaturasAplicada = value.trim();
                 });
               },
+              onSubmitted: (_) => _buscarAsignaturas(),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -566,8 +690,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       if (value == null) return;
                       setState(() {
                         _filtroDocenteAsignatura = value;
+                        _busquedaAsignaturasAplicada =
+                            _busquedaAsignaturasController.text.trim();
                       });
                     },
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _buscarAsignaturas,
+                  icon: const Icon(Icons.search),
+                  label: const Text('Buscar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple.shade700,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                   ),
                 ),
                 ElevatedButton.icon(
@@ -762,14 +901,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       );
     }
 
-    if (_docentesFiltrados.isEmpty) {
-      return _mensajeVacio(
-        icono: Icons.filter_alt_off_outlined,
-        titulo: 'No se encontraron docentes con esos filtros',
-        subtitulo: 'Intente con otra búsqueda o limpie los filtros',
-      );
-    }
-
     return RefreshIndicator(
       onRefresh: _recargarDatos,
       child: ListView(
@@ -805,7 +936,47 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           const SizedBox(height: 12),
           _buildFiltrosDocentes(),
           const SizedBox(height: 12),
-          ..._docentesFiltrados.map(_buildDocenteCard),
+          if (_docentesFiltrados.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 55),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.filter_alt_off_outlined,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No se encontraron docentes con esos filtros',
+                    style: TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Cambie los filtros o presione Limpiar filtros para volver a mostrar todos los docentes',
+                    style: TextStyle(color: Colors.black54),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  ElevatedButton.icon(
+                    onPressed: _limpiarFiltrosDocentes,
+                    icon: const Icon(Icons.cleaning_services),
+                    label: const Text('Limpiar filtros'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ..._docentesFiltrados.map(_buildDocenteCard),
         ],
       ),
     );
@@ -821,14 +992,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         icono: Icons.menu_book_outlined,
         titulo: 'No hay asignaturas registradas',
         subtitulo: 'Primero registre o sincronice asignaturas',
-      );
-    }
-
-    if (_asignaturasFiltradas.isEmpty) {
-      return _mensajeVacio(
-        icono: Icons.filter_alt_off_outlined,
-        titulo: 'No se encontraron asignaturas con esos filtros',
-        subtitulo: 'Intente con otra búsqueda o limpie los filtros',
       );
     }
 
@@ -867,7 +1030,47 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           const SizedBox(height: 12),
           _buildFiltrosAsignaturas(),
           const SizedBox(height: 12),
-          ..._asignaturasFiltradas.map(_buildAsignaturaCard),
+          if (_asignaturasFiltradas.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 55),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.filter_alt_off_outlined,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No se encontraron asignaturas con esos filtros',
+                    style: TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Cambie los filtros o presione Limpiar filtros para volver a mostrar todas las asignaturas',
+                    style: TextStyle(color: Colors.black54),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  ElevatedButton.icon(
+                    onPressed: _limpiarFiltrosAsignaturas,
+                    icon: const Icon(Icons.cleaning_services),
+                    label: const Text('Limpiar filtros'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ..._asignaturasFiltradas.map(_buildAsignaturaCard),
         ],
       ),
     );
@@ -885,9 +1088,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             IconButton(
-              tooltip: 'Sincronizar',
-              icon: const Icon(Icons.sync),
-              onPressed: _recargarDatos,
+              tooltip: _sincronizando ? 'Sincronizando...' : 'Sincronizar',
+              icon: _sincronizando
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.sync),
+              onPressed: _sincronizando ? null : _sincronizarDatos,
             ),
             IconButton(
               tooltip: 'Cerrar sesión',
@@ -896,6 +1108,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
           ],
           bottom: const TabBar(
+            indicatorColor: Colors.white,
+            indicatorWeight: 4,
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
             tabs: [
               Tab(
                 icon: Icon(Icons.groups),
@@ -932,7 +1157,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Administre docentes y asignturas desde un solo panel',
+                    'Administre docentes y asignaturas desde un solo panel',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black54,
@@ -941,7 +1166,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ],
               ),
             ),
-            const Expanded(
+            Expanded(
               child: TabBarView(
                 children: [
                   _AdminDocentesTab(),
@@ -977,3 +1202,4 @@ class _AdminAsignaturasTab extends StatelessWidget {
     return state._buildTabAsignaturas();
   }
 }
+

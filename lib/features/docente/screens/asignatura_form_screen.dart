@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:app_academica_offline/features/admin/models/docente_model.dart';
 import 'package:app_academica_offline/features/admin/repositories/docente_repository.dart';
 import 'package:app_academica_offline/features/docente/models/asignatura_model.dart';
@@ -22,8 +24,8 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
   final _nombreController = TextEditingController();
   final _cursoController = TextEditingController();
 
-  List<Docente> _docentes = [];
-  String? _docenteIdSeleccionado;
+  Docente? _docenteAutenticado;
+  String? _mensajeDocente;
   bool _activo = true;
   bool _guardando = false;
   bool _cargandoDocentes = true;
@@ -42,26 +44,73 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
     if (asignatura != null) {
       _nombreController.text = asignatura.nombre;
       _cursoController.text = asignatura.curso;
-      _docenteIdSeleccionado =
-          asignatura.docenteId.isEmpty ? null : asignatura.docenteId;
       _activo = asignatura.activo;
     }
 
     final docentes = await _docenteRepository.getAll();
+    final docentesActivos = docentes.where((d) => d.activo).toList();
+
+    final correoUsuario =
+        FirebaseAuth.instance.currentUser?.email?.trim().toLowerCase();
+
+    Docente? docenteEncontrado;
+
+    if (asignatura != null && asignatura.docenteId.trim().isNotEmpty) {
+      docenteEncontrado = _buscarDocentePorId(
+            docentesActivos,
+            asignatura.docenteId,
+          ) ??
+          _buscarDocentePorId(
+            docentes,
+            asignatura.docenteId,
+          );
+    }
+
+    if (docenteEncontrado == null &&
+        correoUsuario != null &&
+        correoUsuario.isNotEmpty) {
+      docenteEncontrado = _buscarDocentePorCorreo(
+            docentesActivos,
+            correoUsuario,
+          ) ??
+          _buscarDocentePorCorreo(
+            docentes,
+            correoUsuario,
+          );
+    }
+
+    String? mensaje;
+
+    if (docenteEncontrado == null) {
+      if (correoUsuario == null || correoUsuario.isEmpty) {
+        mensaje = 'No se pudo identificar el correo del docente autenticado.';
+      } else {
+        mensaje =
+            'No se encontró un docente registrado con el correo $correoUsuario.';
+      }
+    }
 
     if (!mounted) return;
 
     setState(() {
-      _docentes = docentes.where((d) => d.activo).toList();
+      _docenteAutenticado = docenteEncontrado;
+      _mensajeDocente = mensaje;
       _cargandoDocentes = false;
     });
+  }
 
-    if (_docenteIdSeleccionado != null &&
-        !_docentes.any((d) => d.id == _docenteIdSeleccionado)) {
-      setState(() {
-        _docenteIdSeleccionado = null;
-      });
-    }
+  Docente? _buscarDocentePorId(List<Docente> docentes, String docenteId) {
+    return docentes.cast<Docente?>().firstWhere(
+          (docente) => docente?.id == docenteId,
+          orElse: () => null,
+        );
+  }
+
+  Docente? _buscarDocentePorCorreo(List<Docente> docentes, String correo) {
+    return docentes.cast<Docente?>().firstWhere(
+          (docente) => docente?.correo.trim().toLowerCase() == correo,
+          orElse: () => null,
+        );
   }
 
   @override
@@ -74,15 +123,14 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
   Future<void> _guardar() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final docenteSeleccionado = _docentes.cast<Docente?>().firstWhere(
-          (d) => d?.id == _docenteIdSeleccionado,
-          orElse: () => null,
-        );
+    final docente = _docenteAutenticado;
 
-    if (docenteSeleccionado == null) {
+    if (docente == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Seleccione un docente'),
+        SnackBar(
+          content: Text(
+            _mensajeDocente ?? 'No se pudo identificar el docente autenticado.',
+          ),
         ),
       );
       return;
@@ -97,9 +145,9 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
           DateTime.now().millisecondsSinceEpoch.toString(),
       nombre: _nombreController.text.trim(),
       curso: _cursoController.text.trim(),
-      docenteId: docenteSeleccionado.id,
+      docenteId: docente.id,
       //numeroEstudiantes: 0,
-      docenteNombre: docenteSeleccionado.nombre,
+      docenteNombre: docente.nombre,
       activo: _activo,
     );
 
@@ -157,31 +205,20 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
                           ),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16),
-                            child: DropdownButtonFormField<String>(
-                              value: _docenteIdSeleccionado,
-                              decoration: const InputDecoration(
+                            child: TextFormField(
+                              initialValue: _docenteAutenticado?.nombre ??
+                                  'Docente no identificado',
+                              enabled: false,
+                              decoration: InputDecoration(
                                 labelText: 'Docente',
-                                border: OutlineInputBorder(),
+                                border: const OutlineInputBorder(),
+                                prefixIcon: const Icon(Icons.person_outline),
+                                helperText:
+                                    'Asignado automáticamente según la sesión',
+                                errorText: _docenteAutenticado == null
+                                    ? _mensajeDocente
+                                    : null,
                               ),
-                              items: _docentes
-                                  .map(
-                                    (docente) => DropdownMenuItem(
-                                      value: docente.id,
-                                      child: Text(docente.nombre),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _docenteIdSeleccionado = value;
-                                });
-                              },
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Seleccione un docente';
-                                }
-                                return null;
-                              },
                             ),
                           ),
                           SwitchListTile(
@@ -256,4 +293,3 @@ class _AsignaturaFormScreenState extends State<AsignaturaFormScreen> {
     );
   }
 }
-

@@ -9,7 +9,7 @@ import 'package:app_academica_offline/features/docente/screens/historial_notas_s
 import 'package:app_academica_offline/features/docente/screens/resumen_notas_screen.dart';
 import 'package:app_academica_offline/services/local/estudiante_local_store.dart';
 
-class AsignaturaDetailScreen extends StatelessWidget {
+class AsignaturaDetailScreen extends StatefulWidget {
   final Asignatura asignatura;
 
   const AsignaturaDetailScreen({
@@ -18,10 +18,36 @@ class AsignaturaDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<AsignaturaDetailScreen> createState() => _AsignaturaDetailScreenState();
+}
+
+class _AsignaturaDetailScreenState extends State<AsignaturaDetailScreen> {
+  final EstudianteLocalStore _estudianteLocalStore = EstudianteLocalStore();
+
+  int _cantidadEstudiantes = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarCantidadEstudiantes();
+  }
+
+  void _cargarCantidadEstudiantes() {
+    final total = _estudianteLocalStore.countByAsignatura(widget.asignatura.id);
+
+    if (!mounted) return;
+
+    setState(() {
+      _cantidadEstudiantes = total;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final asignatura = widget.asignatura;
+
     final String asignaturaId = asignatura.id;
     final String nombreAsignatura = asignatura.nombre;
-    final estudianteLocalStore = EstudianteLocalStore();
 
     final Map<String, dynamic> asignaturaMap = {
       'id': asignatura.id,
@@ -30,7 +56,7 @@ class AsignaturaDetailScreen extends StatelessWidget {
       'docenteId': asignatura.docenteId,
       'docente': asignatura.docenteNombre,
       'docenteNombre': asignatura.docenteNombre,
-      'numeroEstudiantes': asignatura.numeroEstudiantes,
+      'numeroEstudiantes': _cantidadEstudiantes,
       'activo': asignatura.activo,
     };
 
@@ -82,9 +108,7 @@ class AsignaturaDetailScreen extends StatelessWidget {
                     ),
                     _item(
                       'Número de estudiantes',
-                      estudianteLocalStore
-                          .countByAsignatura(asignatura.id)
-                          .toString(),
+                      _cantidadEstudiantes.toString(),
                     ),
                     _item(
                       'Estado',
@@ -108,8 +132,8 @@ class AsignaturaDetailScreen extends StatelessWidget {
               context: context,
               icon: Icons.people,
               texto: 'Estudiantes',
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => EstudiantesHomeScreen(
@@ -117,6 +141,8 @@ class AsignaturaDetailScreen extends StatelessWidget {
                     ),
                   ),
                 );
+
+                _cargarCantidadEstudiantes();
               },
             ),
             const SizedBox(height: 12),
@@ -284,4 +310,3 @@ class AsignaturaDetailScreen extends StatelessWidget {
     );
   }
 }
-
